@@ -39,11 +39,16 @@ vulkan-intel
 vulkan-nouveau
 vulkan-radeon
 
-# Gaming stack
+# Gaming stack. Cores must include ES-DE's per-system defaults
+# (nes=mesen, gb/gbc=gambatte, gba=mgba, snes=snes9x,
+# megadrive=genesis-plus-gx, psx=beetle-psx, n64=mupen64plus-next),
+# otherwise launching a game fails with "core file not found".
 cage
 libretro-beetle-psx
 libretro-core-info
+libretro-gambatte
 libretro-genesis-plus-gx
+libretro-mesen
 libretro-mgba
 libretro-mupen64plus-next
 libretro-nestopia

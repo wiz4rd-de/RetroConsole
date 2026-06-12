@@ -66,6 +66,19 @@ sudo dd if=out/retroconsole-*.iso of=/dev/rdiskN bs=4m status=progress
   present on the ISO, removed by the installer. tty1 autologins user `retro`,
   whose `~/.bash_profile` either starts the installer (live) or the
   cage + ES-DE kiosk session (installed).
+- **Live session boot entries**: the ISO menu also offers "Live session"
+  (kernel parameter `retroconsole.session`, forces the kiosk session on live
+  media) and "Live session, safe graphics" (additionally
+  `retroconsole.software`, which makes cage/ES-DE/RetroArch render in
+  software — use this in VMs and on GPUs the GLES renderer cannot drive).
+- **Bundled libretro cores must include ES-DE's per-system defaults** (see
+  the comment in `packages.x86_64`). ES-DE launches the first emulator entry
+  from its bundled `es_systems.xml`; if that core file is missing the launch
+  fails with "core file not found" even when an alternative core (e.g.
+  Nestopia) is installed.
+- **Test game**: `ROMs/nes/` ships "Alter Ego" (Shiru & Denis Grachev, 2011,
+  free/open-source homebrew) so the gamelist is never empty and game launch
+  can be verified without copying ROMs in.
 - **AUR packages** are real pacman packages in the `[retroconsole]` repo; the
   repo directory ships in the image, so the installed system can reinstall
   them offline. The repo is unsigned (`SigLevel = Optional TrustAll`) — sign
