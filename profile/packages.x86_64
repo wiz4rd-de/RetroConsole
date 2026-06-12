@@ -67,6 +67,9 @@ avahi
 samba
 wsdd
 
+# Wi-Fi setup UI: nmtui (networkmanager) in a fullscreen terminal
+foot
+
 # Controllers (Bluetooth pads)
 bluez
 bluez-utils

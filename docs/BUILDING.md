@@ -79,6 +79,17 @@ sudo dd if=out/retroconsole-*.iso of=/dev/rdiskN bs=4m status=progress
 - **Test game**: `ROMs/nes/` ships "Alter Ego" (Shiru & Denis Grachev, 2011,
   free/open-source homebrew) so the gamelist is never empty and game launch
   can be verified without copying ROMs in.
+- **Samba guest writes need 0777 ROM dirs**: guest sessions are
+  access-checked against the NT ACL synthesized from the POSIX mode, not the
+  `force user` identity — with 0755 dirs, guests can read but every write
+  fails with ACCESS_DENIED. The system ROM dirs ship 0777 (see
+  `profiledef.sh`); the open share is by design, filesystem modes are not the
+  security boundary on this appliance. `tools/` is veto'd from the share so
+  network guests cannot tamper with scripts that ES-DE executes.
+- **Verify Samba from the Mac without a LAN**: forward the guest's SMB port
+  (`-nic user,...,hostfwd=tcp:127.0.0.1:4455-:445`), then
+  `mount_smbfs -N //guest@127.0.0.1:4455/ROMs /tmp/mnt`. Use `cp -X` — macOS
+  quarantine xattrs cannot be copied to the share.
 - **AUR packages** are real pacman packages in the `[retroconsole]` repo; the
   repo directory ships in the image, so the installed system can reinstall
   them offline. The repo is unsigned (`SigLevel = Optional TrustAll`) — sign
