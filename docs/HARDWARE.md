@@ -12,9 +12,19 @@
 
 ## Troubleshooting
 
+- **TV shows "no signal" for ~30 s during live/installed boot**: expected.
+  Shortly after the boot messages the kernel's GPU driver takes over the
+  display and some TVs drop the signal until ES-DE starts and sets a proper
+  mode. The installer is unaffected: it boots with `nomodeset` and stays on
+  the firmware framebuffer the whole time.
 - **Black screen instead of ES-DE**: the GPU may be too old for the GLES
   renderer. Add `retroconsole.software` to the kernel command line (press `e`
   in GRUB) to force software rendering, then report the hardware.
+- **Sound comes out of the PC instead of the TV**: HDMI outputs are ranked
+  above analog via `/etc/wireplumber/wireplumber.conf.d/50-retroconsole-prefer-hdmi.conf`.
+  If it still happens, switch to tty2 and run `wpctl status` — if no HDMI
+  sink is listed at all, the sound card's active profile is analog-only;
+  report the `wpctl status` output so a profile rule can be added.
 - **Console access**: ES-DE runs on tty1. Switch to tty2 (Ctrl+Alt+F2) and log
   in as `retro` (no password) for a shell.
 
