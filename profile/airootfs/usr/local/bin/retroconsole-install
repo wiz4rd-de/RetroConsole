@@ -24,7 +24,13 @@ die() {
 
 [[ -e /etc/retroconsole-live ]] || die "Not running from the RetroConsole live ISO; refusing to install."
 [[ ${EUID} -eq 0 ]] || exec sudo "$0" "$@"
-[[ -r ${SFS} ]] || die "Cannot find ${SFS} (is the boot medium still attached?)"
+if [[ ! -r ${SFS} ]]; then
+    # The installer boot entry sets copytoram=n; this only happens when
+    # someone forces copytoram=y, which unmounts the boot medium.
+    [[ -r /run/archiso/copytoram/airootfs.sfs ]] \
+        && die "Booted with copytoram: the boot medium was unmounted. Reboot into the installer entry without copytoram."
+    die "Cannot find ${SFS} (is the boot medium still attached?)"
+fi
 [[ -r ${KERNEL} ]] || die "Cannot find ${KERNEL}"
 
 # --- Pick the target disk -------------------------------------------------

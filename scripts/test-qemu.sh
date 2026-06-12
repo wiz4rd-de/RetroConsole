@@ -25,6 +25,7 @@ cd "$(dirname "$0")/.."
 MODE=bios
 FRESH=0
 BOOT_DISK=0
+USB_STICK=0
 GAMEPAD=""
 for arg in "$@"; do
     case "${arg}" in
@@ -32,6 +33,7 @@ for arg in "$@"; do
         --bios) MODE=bios ;;
         --fresh-disk) FRESH=1 ;;
         --boot-disk) BOOT_DISK=1 ;;
+        --usb-stick) USB_STICK=1 ;;
         --gamepad) GAMEPAD="2563:0523" ;;
         --gamepad=*) GAMEPAD="${arg#--gamepad=}" ;;
         *) echo "Unknown argument: ${arg}" >&2; exit 1 ;;
@@ -81,7 +83,19 @@ fi
 if [[ ${BOOT_DISK} -eq 0 ]]; then
     ISO=$(ls -t out/retroconsole-*.iso 2>/dev/null | head -1) \
         || { echo "No ISO in out/ — run 'make iso' first." >&2; exit 1; }
-    ARGS+=(-cdrom "${ISO}" -boot d)
+    if [[ ${USB_STICK} -eq 1 ]]; then
+        # Boot the isohybrid image the way real hardware sees it: as a
+        # dd'd USB mass-storage disk, not a CD-ROM. The initramfs takes
+        # different mount paths for the two, so test both.
+        STICK=out/test-usb-stick.raw
+        if [[ ! -e ${STICK} || ${STICK} -ot ${ISO} ]]; then
+            cp "${ISO}" "${STICK}"
+        fi
+        ARGS+=(-drive "file=${STICK},if=none,id=usbstick,format=raw"
+               -device "usb-storage,drive=usbstick,bootindex=0")
+    else
+        ARGS+=(-cdrom "${ISO}" -boot d)
+    fi
 fi
 
 # No exec: open up the control sockets once QEMU has created them, so
