@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# RetroConsole system update: full pacman upgrade, shown on screen and logged.
+# Run from the ES-DE "Tools" menu (foot terminal → scoped NOPASSWD sudo) or a
+# shell. Output streams to the terminal AND appends to the log via tee, so the
+# user sees live progress; a final keypress gate keeps the result on screen
+# until they choose to return to ES-DE.
+set -uo pipefail
+
+LOG=/var/log/retroconsole-update.log
+
+# Live media runs from a tmpfs overlay: a pacman -Syu writes into RAM and is
+# lost on reboot (and can exhaust memory). Refuse and explain instead.
+if [[ -e /etc/retroconsole-live ]]; then
+    echo "This is the live USB session — updates can't be saved here."
+    echo "Install RetroConsole to the internal disk first, then update."
+    read -rp "Press Enter to return..." _
+    exit 0
+fi
+
+if [[ ${EUID} -ne 0 ]]; then
+    exec sudo "$0" "$@"
+fi
+
+# tee mirrors everything to the terminal and the log. PIPESTATUS[0] is pacman's
+# real exit code (pipefail would otherwise mask it behind tee's success).
+{
+    echo "=== RetroConsole update started: $(date) ==="
+    pacman -Syu --noconfirm
+} 2>&1 | tee -a "${LOG}"
+status=${PIPESTATUS[0]}
+echo "=== Finished with status ${status}: $(date) ===" | tee -a "${LOG}"
+
+echo
+if [[ ${status} -eq 0 ]]; then
+    echo "Update complete."
+else
+    echo "Update FAILED (exit ${status}). See ${LOG}."
+fi
+read -rp "Press Enter to return to ES-DE..." _
+exit "${status}"

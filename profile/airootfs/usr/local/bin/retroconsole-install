@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+# RetroConsole installer.
+#
+# Runs automatically on tty1 of the live ISO. Picks the largest internal,
+# non-removable disk, asks for a single confirmation, then wipes it and
+# installs RetroConsole by unpacking the live squashfs image onto it.
+#
+# Disk layout (GPT, boots on both UEFI and legacy BIOS):
+#   p1  1 MiB    BIOS boot partition (GRUB core.img)
+#   p2  512 MiB  EFI system partition (FAT32)
+#   p3  rest     ext4 root
+set -euo pipefail
+
+SFS=/run/archiso/bootmnt/arch/x86_64/airootfs.sfs
+KERNEL=/run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux
+MNT=/mnt
+
+die() {
+    echo
+    echo "ERROR: $*" >&2
+    echo "Dropping to a shell. Type 'reboot' to restart." >&2
+    exec bash -i
+}
+
+[[ -e /etc/retroconsole-live ]] || die "Not running from the RetroConsole live ISO; refusing to install."
+[[ ${EUID} -eq 0 ]] || exec sudo "$0" "$@"
+if [[ ! -r ${SFS} ]]; then
+    # The installer boot entry sets copytoram=n; this only happens when
+    # someone forces copytoram=y, which unmounts the boot medium.
+    [[ -r /run/archiso/copytoram/airootfs.sfs ]] \
+        && die "Booted with copytoram: the boot medium was unmounted. Reboot into the installer entry without copytoram."
+    die "Cannot find ${SFS} (is the boot medium still attached?)"
+fi
+[[ -r ${KERNEL} ]] || die "Cannot find ${KERNEL}"
+
+# --- Pick the target disk -------------------------------------------------
+
+# The disk the live medium itself lives on must never be a target.
+boot_src=$(findmnt -no SOURCE /run/archiso/bootmnt || true)
+boot_disk=""
+if [[ -n ${boot_src} && ${boot_src} == /dev/* ]]; then
+    boot_disk=$(lsblk -no PKNAME "${boot_src}" 2>/dev/null | head -1 || true)
+    [[ -z ${boot_disk} ]] && boot_disk=$(basename "${boot_src}")
+fi
+
+target=""
+target_size=0
+while read -r name size rm type; do
+    [[ ${type} == disk ]] || continue
+    [[ ${rm} -eq 0 ]] || continue                      # skip removable (USB sticks)
+    [[ ${name} == "${boot_disk}" ]] && continue        # skip the live medium
+    [[ ${name} == loop* || ${name} == sr* || ${name} == zram* ]] && continue
+    if (( size > target_size )); then
+        target=${name}
+        target_size=${size}
+    fi
+done < <(lsblk -dbno NAME,SIZE,RM,TYPE)
+
+[[ -n ${target} ]] || die "No suitable internal disk found."
+
+disk=/dev/${target}
+model=$(lsblk -dno MODEL "${disk}" | sed 's/^ *//;s/ *$//')
+human_size=$(lsblk -dno SIZE "${disk}")
+
+# --- The one confirmation -------------------------------------------------
+
+clear
+echo "==============================================="
+echo "          RetroConsole Installer"
+echo "==============================================="
+echo
+echo "  Target disk:  ${disk}"
+echo "  Model:        ${model:-unknown}"
+echo "  Size:         ${human_size}"
+echo
+echo "  ALL DATA ON THIS DISK WILL BE ERASED."
+echo
+read -rp "Type YES (in capitals) to erase ${disk} and install RetroConsole: " answer
+if [[ ${answer} != YES ]]; then
+    echo
+    echo "Aborted. Nothing was changed."
+    echo "Press Enter to reboot, or Ctrl+C for a shell."
+    read -r
+    systemctl reboot
+    exit 0
+fi
+
+# --- Partition and format -------------------------------------------------
+
+echo
+echo ":: Partitioning ${disk}..."
+sgdisk --zap-all "${disk}"
+sgdisk --new=1:0:+1MiB   --typecode=1:ef02 --change-name=1:BIOSBOOT "${disk}"
+sgdisk --new=2:0:+512MiB --typecode=2:ef00 --change-name=2:ESP "${disk}"
+sgdisk --new=3:0:0       --typecode=3:8300 --change-name=3:ROOT "${disk}"
+udevadm settle
+
+# nvme0n1 -> nvme0n1p3, sda -> sda3
+part_prefix=${disk}
+[[ ${disk} == *[0-9] ]] && part_prefix="${disk}p"
+esp="${part_prefix}2"
+root="${part_prefix}3"
+
+echo ":: Creating filesystems..."
+mkfs.fat -F 32 -n ESP "${esp}"
+mkfs.ext4 -q -F -L retroconsole "${root}"
+
+mount "${root}" "${MNT}"
+mkdir -p "${MNT}/boot/efi"
+mount "${esp}" "${MNT}/boot/efi"
+
+# --- Copy the system ------------------------------------------------------
+
+echo ":: Copying system (this takes a few minutes)..."
+unsquashfs -f -d "${MNT}" "${SFS}"
+
+# mkarchiso empties /boot inside the squashfs; restore kernel and microcode.
+echo ":: Installing kernel..."
+cp "${KERNEL}" "${MNT}/boot/vmlinuz-linux"
+cp -f "${MNT}"/usr/lib/retroconsole/*-ucode.img "${MNT}/boot/" 2>/dev/null || true
+
+echo ":: Generating fstab..."
+genfstab -U "${MNT}" >> "${MNT}/etc/fstab"
+
+# --- Strip live-only pieces ----------------------------------------------
+
+echo ":: Converting live system to installed system..."
+rm -f "${MNT}/etc/retroconsole-live"
+rm -f "${MNT}/etc/mkinitcpio.conf.d/archiso.conf"
+rm -f "${MNT}/usr/local/bin/retroconsole-install"
+sed -i '\|retroconsole-install|d' "${MNT}/etc/sudoers.d/retroconsole"
+
+# Standard initramfs preset instead of the archiso one
+cat > "${MNT}/etc/mkinitcpio.d/linux.preset" <<'EOF'
+# mkinitcpio preset file for the 'linux' package
+ALL_kver="/boot/vmlinuz-linux"
+PRESETS=('default')
+default_image="/boot/initramfs-linux.img"
+EOF
+
+# The live ISO keeps the pacman keyring on a tmpfs and re-initializes it each
+# boot; an installed system wants a persistent keyring instead.
+rm -f "${MNT}/etc/systemd/system/multi-user.target.wants/pacman-init.service"
+rm -f "${MNT}/etc/systemd/system/pacman-init.service"
+rm -f "${MNT}/etc/systemd/system/etc-pacman.d-gnupg.mount"
+
+# --- Configure the installed system ----------------------------------------
+
+arch-chroot "${MNT}" /bin/bash -e <<'CHROOT'
+rm -f /etc/machine-id
+systemd-machine-id-setup
+mkinitcpio -P
+pacman-key --init
+pacman-key --populate archlinux
+CHROOT
+
+# --- Bootloader: both firmware paths, unconditionally ----------------------
+
+echo ":: Installing bootloader (BIOS + UEFI)..."
+arch-chroot "${MNT}" grub-install --target=i386-pc "${disk}"
+arch-chroot "${MNT}" grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+    --bootloader-id=RetroConsole --removable --no-nvram
+if [[ -d /sys/firmware/efi ]]; then
+    # Booted via UEFI: also register a proper NVRAM boot entry.
+    arch-chroot "${MNT}" grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+        --bootloader-id=RetroConsole
+fi
+arch-chroot "${MNT}" grub-mkconfig -o /boot/grub/grub.cfg
+
+# --- Done -------------------------------------------------------------------
+
+umount -R "${MNT}"
+
+echo
+echo "==============================================="
+echo "  Installation complete."
+echo "  Remove the USB stick, then press Enter to"
+echo "  reboot into RetroConsole."
+echo "==============================================="
+read -r
+systemctl reboot

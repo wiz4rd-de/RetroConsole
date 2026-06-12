@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# RetroConsole kiosk session: ES-DE inside the cage Wayland compositor.
+# Launched from ~/.bash_profile on tty1; getty respawns it if it exits.
+
+# Escape hatch for GPUs the GLES renderer cannot drive: add
+# "retroconsole.software" to the kernel command line.
+if grep -qw 'retroconsole.software' /proc/cmdline; then
+    export WLR_RENDERER=pixman
+    export LIBGL_ALWAYS_SOFTWARE=1
+fi
+
+export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-de}"
+
+exec cage -- es-de

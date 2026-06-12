@@ -1,0 +1,41 @@
+# Hardware notes
+
+## Requirements
+
+- x86_64 PC, UEFI or legacy BIOS (the installed disk boots on both: GPT with a
+  BIOS boot partition + ESP, GRUB installed for both firmware types)
+- One internal disk (the installer picks the largest internal, non-removable
+  disk and asks once before wiping it)
+- Intel or AMD graphics work out of the box (mesa/Vulkan). NVIDIA uses the
+  open nouveau/NVK stack — fine for the bundled libretro cores; the
+  proprietary driver is intentionally not included yet.
+
+## Troubleshooting
+
+- **TV shows "no signal" for ~30 s during live/installed boot**: expected.
+  Shortly after the boot messages the kernel's GPU driver takes over the
+  display and some TVs drop the signal until ES-DE starts and sets a proper
+  mode. The installer is unaffected: it boots with `nomodeset` and stays on
+  the firmware framebuffer the whole time.
+- **Black screen instead of ES-DE**: the GPU may be too old for the GLES
+  renderer. Add `retroconsole.software` to the kernel command line (press `e`
+  in GRUB) to force software rendering, then report the hardware.
+- **Sound comes out of the PC instead of the TV**: HDMI outputs are ranked
+  above analog via `/etc/wireplumber/wireplumber.conf.d/50-retroconsole-prefer-hdmi.conf`.
+  If it still happens, switch to tty2 and run `wpctl status` — if no HDMI
+  sink is listed at all, the sound card's active profile is analog-only;
+  report the `wpctl status` output so a profile rule can be added.
+- **Console access**: ES-DE runs on tty1. Switch to tty2 (Ctrl+Alt+F2) and log
+  in as `retro` (no password) for a shell.
+
+## BIOS files
+
+PSX needs user-supplied BIOS images; see
+`/home/retro/.config/retroarch/system/README.txt` on the box (you can drop
+files there via the ROMs network share).
+
+## Tested machines
+
+| Machine | GPU | Firmware | Status |
+|---|---|---|---|
+| _(none yet)_ | | | |
