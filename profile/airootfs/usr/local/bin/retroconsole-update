@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# RetroConsole system update: full pacman upgrade, logged.
+# Run from the ES-DE "Tools" menu (via scoped NOPASSWD sudo) or a shell.
+set -uo pipefail
+
+if [[ ${EUID} -ne 0 ]]; then
+    exec sudo "$0" "$@"
+fi
+
+LOG=/var/log/retroconsole-update.log
+
+{
+    echo "=== RetroConsole update started: $(date) ==="
+    pacman -Syu --noconfirm
+    status=$?
+    echo "=== Finished with status ${status}: $(date) ==="
+    exit "${status}"
+} >>"${LOG}" 2>&1

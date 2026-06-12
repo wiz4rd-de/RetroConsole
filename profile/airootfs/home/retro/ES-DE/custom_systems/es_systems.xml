@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<systemList>
+    <system>
+        <name>tools</name>
+        <fullname>Tools</fullname>
+        <path>%ROMPATH%/tools</path>
+        <extension>.sh</extension>
+        <command>%ROM%</command>
+        <platform>desktop</platform>
+        <theme>desktop</theme>
+    </system>
+</systemList>

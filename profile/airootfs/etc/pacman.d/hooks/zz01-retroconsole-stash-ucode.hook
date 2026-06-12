@@ -1,0 +1,14 @@
+# remove from airootfs!
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = amd-ucode
+Target = intel-ucode
+
+[Action]
+Description = Stashing microcode images for the RetroConsole installer...
+When = PostTransaction
+Depends = sh
+Depends = coreutils
+Exec = /bin/sh -c 'mkdir -p /usr/lib/retroconsole && cp -f /boot/*-ucode.img /usr/lib/retroconsole/ 2>/dev/null || true'

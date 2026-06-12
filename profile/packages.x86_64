@@ -1,0 +1,73 @@
+# Base system
+amd-ucode
+base
+intel-ucode
+linux
+linux-firmware
+mkinitcpio
+mkinitcpio-archiso
+sof-firmware
+sudo
+
+# Bootloaders (syslinux boots the ISO on BIOS; grub is installed on the target)
+efibootmgr
+grub
+syslinux
+
+# Installer tooling
+arch-install-scripts
+dosfstools
+e2fsprogs
+gptfdisk
+squashfs-tools
+
+# Networking
+networkmanager
+wpa_supplicant
+
+# Audio
+alsa-utils
+pipewire
+pipewire-alsa
+pipewire-pulse
+wireplumber
+
+# Graphics (Intel/AMD out of the box, NVIDIA via nouveau/NVK)
+intel-media-driver
+mesa
+vulkan-intel
+vulkan-nouveau
+vulkan-radeon
+
+# Gaming stack
+cage
+libretro-beetle-psx
+libretro-core-info
+libretro-genesis-plus-gx
+libretro-mgba
+libretro-mupen64plus-next
+libretro-nestopia
+libretro-snes9x
+retroarch
+retroarch-assets-ozone
+retroarch-assets-xmb
+
+# From the local [retroconsole] repo (AUR-built at ISO build time)
+emulationstation-de
+game-devices-udev
+retroarch-autoconfig-udev-git
+
+# ROM sharing
+avahi
+samba
+wsdd
+
+# Controllers (Bluetooth pads)
+bluez
+bluez-utils
+
+# Misc
+less
+nano
+polkit
+terminus-font
