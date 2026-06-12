@@ -57,6 +57,18 @@ diskutil unmountDisk /dev/diskN
 sudo dd if=out/retroconsole-*.iso of=/dev/rdiskN bs=4m status=progress
 ```
 
+## Build log warnings that are safe to ignore
+
+`mkinitcpio` prints `WARNING: Possibly missing firmware for module: ...` for
+`aic94xx`, `ast`, `bfa`, `qed`, `qla1280`, `qla2xxx`, `wd719x` and
+`xhci_pci_renesas`. The fallback initramfs packs every storage/display
+driver in the kernel and flags optional firmware that is not installed —
+these modules are 90s SCSI controllers, fibre-channel SAN HBAs and server
+BMC graphics. No hardware a retro console can use is affected (consumer
+Wi-Fi/GPU/ethernet firmware is all in `linux-firmware`, which we ship);
+several of these firmware files are not even redistributable. The same
+warnings appear on any stock Arch install.
+
 ## Design notes
 
 - **One package list**: the installer copies the live squashfs onto the disk,
