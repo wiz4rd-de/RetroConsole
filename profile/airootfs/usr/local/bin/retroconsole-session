@@ -9,6 +9,6 @@ if grep -qw 'retroconsole.software' /proc/cmdline; then
     export LIBGL_ALWAYS_SOFTWARE=1
 fi
 
-export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-us}"
+export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-de}"
 
 exec cage -- es-de
