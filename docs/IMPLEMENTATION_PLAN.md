@@ -89,8 +89,8 @@ fi
   *Verify:* `make iso` on the Mac produces an ISO that boots to a root shell in QEMU under both SeaBIOS and OVMF.
 - **M1 — Live ES-DE session** ✅ (2026-06-12): `[retroconsole]` repo step, full package list, `retro` user + autologin + dispatcher, session script, seeded ES-DE/RetroArch configs, "Alter Ego" homebrew NES ROM in `ROMs/nes/`. Added "Live session" / "Live session, safe graphics" ISO boot entries (`retroconsole.session` / `retroconsole.software` kernel params) so the kiosk session is reachable from live media. Added libretro-mesen + libretro-gambatte (ES-DE's default cores for nes and gb/gbc).
   *Verified:* ISO (BIOS, safe-graphics entry) boots straight into ES-DE in QEMU; Alter Ego launches in RetroArch, plays, and Esc returns to ES-DE.
-- **M2 — Installer**: `retroconsole-install`, live flag, target mkinitcpio, dual GRUB.
-  *Verify:* QEMU blank disk → YES prompt → reboot without ISO → ES-DE. Matrix: BIOS-install/BIOS-boot, UEFI-install/UEFI-boot; check no-eligible-disk abort and that the boot USB is never selected.
+- **M2 — Installer** ✅ (2026-06-12): `retroconsole-install`, live flag, target mkinitcpio, dual GRUB.
+  *Verified:* full matrix in QEMU — BIOS-install/BIOS-boot and UEFI-install/UEFI-boot both end in ES-DE after rebooting from the bare disk (no ISO). `grub-mkconfig` picked up kernel + both ucode images (the pacman-hook stash works); the UEFI run executed the extra NVRAM `grub-install` and the disk booted via the `--removable` fallback path. No-disk boot aborts with "No suitable internal disk found" and drops to a shell; the boot medium was never selected as target. Notably the installed system runs cage/ES-DE under plain virtio-vga without `retroconsole.software`.
 - **M3 — Controller-first polish**: udev game-device rules, RetroArch autoconfig profiles, input group, Select+Start quit hotkey.
   *Verify:* real hardware or QEMU USB passthrough — full session (boot → browse → play → quit → shutdown) without touching a keyboard.
 - **M4 — ROM management**: smb.conf, avahi, wsdd, enabled units, ES-DE tools entry to restart ES-DE (rescan).
