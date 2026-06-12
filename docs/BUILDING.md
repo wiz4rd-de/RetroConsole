@@ -49,6 +49,27 @@ x86_64 on Apple Silicon uses TCG (full CPU emulation): boot takes minutes and
 ES-DE renders via llvmpipe. That is fine for verification; judge performance
 on real hardware only.
 
+### USB gamepad passthrough
+
+```sh
+sudo scripts/test-qemu.sh --gamepad             # ShanWan PS3/PC pad (2563:0523)
+sudo scripts/test-qemu.sh --gamepad=dead:beef   # any other VID:PID
+```
+
+`sudo` is required: macOS only lets libusb capture a HID device from the
+kernel driver as root. Without it QEMU attaches a husk the guest cannot
+configure (`libusb_detach_kernel_driver: -3 [ACCESS]` on the terminal, the
+device stays at 1.5 Mb/s with no product string and binds no input driver).
+Once captured, QEMU periodically prints
+`libusb_kernel_driver_active: -5 [NOT_FOUND]` — that is harmless noise
+("no macOS driver attached", which is exactly the captured state).
+
+The script always exposes a QEMU monitor socket at `/tmp/rc-mon.sock` and a
+serial socket at `/tmp/rc-serial.sock`; append `console=ttyS0,115200` to the
+kernel command line (Tab in the boot menu) to get a serial login shell.
+When booted into the installer entry, cage is not running, so
+Ctrl+Alt+F2 also gives a tty2 login — handy for poking at the live system.
+
 ## Flash to USB
 
 ```sh

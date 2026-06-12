@@ -1,2 +1,6 @@
 <?xml version="1.0"?>
 <string name="ROMDirectory" value="/home/retro/ROMs" />
+<!-- Adds REBOOT SYSTEM / POWER OFF SYSTEM to the quit menu; without it the
+     only entry is "QUIT ES-DE", which the kiosk session instantly respawns,
+     leaving no controller-only way to shut the machine down. -->
+<bool name="ShowQuitMenu" value="true" />

@@ -1,0 +1,24 @@
+# Stays in the image (unlike the build-only hooks): re-applies the fix if
+# the autoconfig package is ever upgraded on an installed system.
+#
+# The upstream "Spartan Gear Oplon Dinput" profile (ShanWan PS3/PC Wired
+# GamePad, 2563:0523) ships with the d-pad unbound — the profile author's
+# pad variant overlaps d-pad and left analog, ours reports the d-pad as
+# HAT0 (verified by decoding evdev directly). Without these binds the
+# d-pad works in ES-DE (SDL) but is dead in RetroArch. An airootfs file
+# override is not possible here: mkarchiso copies airootfs before
+# pacstrap, and pacman then aborts on the file conflict.
+
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = retroarch-autoconfig-udev-git
+
+[Action]
+Description = Adding missing d-pad hat binds to the ShanWan/Spartan RetroArch profile...
+When = PostTransaction
+Depends = sh
+Depends = grep
+Depends = coreutils
+Exec = /bin/sh -c 'f="/usr/share/libretro/autoconfig/udev/Spartan Gear Oplon Dinput.cfg"; grep -q h0up "$f" || printf "input_%s_btn = \"h0%s\"\n" up up down down left left right right >> "$f"'
