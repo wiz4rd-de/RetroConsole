@@ -2,3 +2,4 @@ out/
 work/
 profile/airootfs/opt/retroconsole/repo/*
 !profile/airootfs/opt/retroconsole/repo/.gitkeep
+IMPLEMENTATION_PLAN.md
