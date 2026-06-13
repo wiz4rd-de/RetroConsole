@@ -1,0 +1,14 @@
+// RetroConsole: the kiosk user manages the appliance's connectivity.
+//
+// NetworkManager gates system-connection changes (saving a Wi-Fi network
+// in nmtui creates one) behind auth_admin, and the kiosk session has no
+// polkit authentication agent to ask — nmtui just fails with
+// "Insufficient privileges". Same story for BlueZ device pairing.
+// Single-user appliance: grant retro both wholesale.
+polkit.addRule(function(action, subject) {
+    if (subject.user === "retro" &&
+        (action.id.indexOf("org.freedesktop.NetworkManager.") === 0 ||
+         action.id.indexOf("org.bluez.") === 0)) {
+        return polkit.Result.YES;
+    }
+});
