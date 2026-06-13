@@ -78,6 +78,55 @@ diskutil unmountDisk /dev/diskN
 sudo dd if=out/retroconsole-*.iso of=/dev/rdiskN bs=4m status=progress
 ```
 
+## Releasing
+
+Releases are cut by CI (`.github/workflows/release.yml`), not by hand — no
+manual ISO uploads, no manual `publish-repo.sh`. Push a semver tag and the
+workflow does everything:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+On a native amd64 runner it builds the ISO (same Docker image and scripts as
+`make iso`), then:
+
+- creates the GitHub Release `v0.1.0` with the ISO and its `.sha256`
+  attached — this is the fresh-install medium; and
+- republishes the rolling `repo` pacman repository, the OTA channel that
+  *Tools → Update System* pulls from.
+
+Versioning starts at `v0.1.0`. No secrets to configure: the workflow uses the
+built-in `GITHUB_TOKEN` (needs `contents: write`, which it requests). Expect
+~30–60 min — the AUR packages compile from source on every release (no
+cross-run caching, so each release's artifacts are reproducible from the tag).
+
+## Ship a fix to installed systems (OTA)
+
+System-level appliance files (session/update scripts, polkit rule,
+WirePlumber/keymap config, sudoers) are owned by the `retroconsole-config`
+package (`packages/retroconsole-config/`), not by loose airootfs files, so
+installed systems receive fixes through *Tools → Update System* without
+reflashing:
+
+1. Edit the file under `packages/retroconsole-config/` and bump `pkgver`
+   (or `pkgrel` for a packaging-only change) in the `PKGBUILD`.
+2. Merge to `main` and cut a release (see *Releasing* above). CI rebuilds the
+   package and republishes the rolling `repo` GitHub Release that installed
+   systems have as their primary pacman server (with the baked-in
+   `file:///opt/retroconsole/repo` as offline fallback). The OTA repo is
+   refreshed only when a release is cut, so a fix ships the moment you tag.
+
+To try the package before releasing, run `make iso` (rebuilds it into the
+local `[retroconsole]` repo) and optionally `scripts/publish-repo.sh` to push
+it to the `repo` release by hand.
+
+Files seeded under `/home/retro` (ES-DE settings, retroarch.cfg, foot.ini)
+are runtime-mutable user state: they stay in airootfs and only apply at
+install time. Fixes to those still need a reinstall — keep product logic
+out of them (the ROMs tools scripts are one-line wrappers for that reason).
+
 ## Build log warnings that are safe to ignore
 
 `mkinitcpio` prints `WARNING: Possibly missing firmware for module: ...` for

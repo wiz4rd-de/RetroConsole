@@ -61,6 +61,10 @@ retroarch-assets-xmb
 emulationstation-de
 game-devices-udev
 retroarch-autoconfig-udev-git
+# Our own appliance config (packages/retroconsole-config) — system-level
+# files live here, not in airootfs, so fixes reach installed systems via
+# "Update System" once published with scripts/publish-repo.sh.
+retroconsole-config
 
 # ROM sharing
 avahi

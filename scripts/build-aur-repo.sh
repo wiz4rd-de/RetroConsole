@@ -60,5 +60,16 @@ for pkg in "${AUR_PACKAGES[@]}"; do
     refresh_repo
 done
 
+# Our own config package: always rebuilt (cheap — no compilation) so file
+# edits and pkgver bumps are picked up by every build.
+echo ":: Building retroconsole-config..."
+rm -rf "${BUILD_DIR}/retroconsole-config"
+cp -r /build/packages/retroconsole-config "${BUILD_DIR}/retroconsole-config"
+chown -R builder "${BUILD_DIR}/retroconsole-config"
+(cd "${BUILD_DIR}/retroconsole-config" && sudo -u builder makepkg --noconfirm --force)
+rm -f "${REPO_DIR}"/retroconsole-config-*.pkg.tar.zst
+cp "${BUILD_DIR}/retroconsole-config"/retroconsole-config-*.pkg.tar.zst "${REPO_DIR}/"
+refresh_repo
+
 echo ":: Done. Repo contents:"
 ls -lh "${REPO_DIR}"
