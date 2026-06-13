@@ -6,13 +6,46 @@
 
 _enable_units() {
     systemctl enable retroconsole-seed.service
-    # sshd enable + retro:retro password added by #15
+    # sshd for field debugging (B3/#15). Not --now: takes effect next boot;
+    # openssh is a depends of this package so pacman installs it before this
+    # scriptlet runs, so the unit name resolves here.
+    systemctl enable sshd.service
+}
+
+# Set the default retro:retro ssh credential, but ONLY when the retro account
+# has no usable password yet (B3/#15). sshd refuses empty-password logins, so
+# the account needs one to be reachable.
+#
+# "Set only if unset" (not post_install-only) is deliberate: post_install-only
+# would leave existing OTA-upgraded field boxes — exactly the boxes we most
+# need to reach — with no ssh password and thus no login. Guarding on the
+# current password status instead gives fresh installs AND existing upgraded
+# boxes the default, while never clobbering a password someone deliberately
+# changed (status "P" → left untouched).
+#
+# SECURITY: retro:retro is a LAN field-debug MVP default, consistent with the
+# existing posture (guest-writable Samba, SigLevel TrustAll unsigned repo).
+# retro has NOPASSWD sudo to update/reboot/poweroff, so this is a foothold on
+# untrusted networks. CHANGE retro:retro AND sign the repo before any public
+# release.
+_set_default_password() {
+    # passwd -S prints: "<user> <status> ...", status is P (usable password),
+    # L (locked), or NP (no password). Set the default only for L / NP.
+    local status
+    status="$(passwd -S retro 2>/dev/null | awk '{print $2}')"
+    case "${status}" in
+        L|NP|"")
+            echo 'retro:retro' | chpasswd
+            ;;
+    esac
 }
 
 post_install() {
     _enable_units
+    _set_default_password
 }
 
 post_upgrade() {
     _enable_units
+    _set_default_password
 }

@@ -23,6 +23,7 @@ squashfs-tools
 
 # Networking
 networkmanager
+openssh
 wpa_supplicant
 
 # Audio
