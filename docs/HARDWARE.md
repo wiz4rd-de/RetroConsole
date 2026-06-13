@@ -4,8 +4,14 @@
 
 - x86_64 PC, UEFI or legacy BIOS (the installed disk boots on both: GPT with a
   BIOS boot partition + ESP, GRUB installed for both firmware types)
-- One internal disk (the installer picks the largest internal, non-removable
-  disk and asks once before wiping it)
+- One internal disk, at least 24 GiB. With a single internal disk the installer
+  uses it automatically; if several are present it lists them and asks which one
+  to install onto (so a data drive is never wiped by mistake), then asks once
+  more before writing. The chosen disk is split into a fixed 16 GiB system
+  partition (`rcsys`) and a `rcuser` partition that holds `/home` — games and
+  settings — and takes the rest. A first-time install wipes that disk;
+  reinstalling or updating on a machine that already runs RetroConsole keeps the
+  `rcuser` partition, so games and settings survive.
 - Intel or AMD graphics work out of the box (mesa/Vulkan). NVIDIA uses the
   open nouveau/NVK stack — fine for the bundled libretro cores; the
   proprietary driver is intentionally not included yet.

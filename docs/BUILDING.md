@@ -123,9 +123,13 @@ local `[retroconsole]` repo) and optionally `scripts/publish-repo.sh` to push
 it to the `repo` release by hand.
 
 Files seeded under `/home/retro` (ES-DE settings, retroarch.cfg, foot.ini)
-are runtime-mutable user state: they stay in airootfs and only apply at
-install time. Fixes to those still need a reinstall — keep product logic
-out of them (the ROMs tools scripts are one-line wrappers for that reason).
+are runtime-mutable user state: they live in airootfs and are written to the
+`rcuser` (`/home`) partition only when that path does not already exist — a
+fresh install, or a new default added in a later ISO (see the system/user
+split note below). A reinstall does **not** overwrite a user's existing copy,
+so fixes to these never reach machines already in the field — keep product
+logic out of them (the ROMs tools scripts are one-line wrappers for that
+reason; ship behavioural fixes through the package above).
 
 ## Build log warnings that are safe to ignore
 
@@ -148,6 +152,17 @@ warnings appear on any stock Arch install.
   present on the ISO, removed by the installer. tty1 autologins user `retro`,
   whose `~/.bash_profile` either starts the installer (live) or the
   cage + ES-DE kiosk session (installed).
+- **System / user split**: the installer creates two ext4 partitions —
+  `rcsys` (a fixed 16 GiB system root) and `rcuser` (the rest, mounted at
+  `/home`). Partitions are found by GPT name (PARTLABELs `rcbios`, `rcesp`,
+  `rcsys`, `rcuser`), not by device path, so nvme and sd\* disks and reinstalls
+  behave identically. On a disk that already carries this layout the installer
+  runs in *preserve* mode: it reformats only `rcsys` (and the ESP) and keeps
+  `rcuser`, so a reinstall/update never loses games or settings. The `/home`
+  skeleton from the image is seeded onto `rcuser` with `cp -an` — new default
+  entries (e.g. a ROM folder for a newly added emulator) appear, existing user
+  files are never overwritten. Disks with no (or an incomplete) RetroConsole
+  layout get a full wipe.
 - **Live session boot entries**: the ISO menu also offers "Live session"
   (kernel parameter `retroconsole.session`, forces the kiosk session on live
   media) and "Live session, safe graphics" (additionally

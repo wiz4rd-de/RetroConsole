@@ -32,7 +32,11 @@ if ! grep -q '^\[retroconsole\]' /etc/pacman.conf; then
 fi
 
 refresh_repo() {
-    (cd "${REPO_DIR}" && repo-add --remove --new retroconsole.db.tar.gz ./*.pkg.tar.zst)
+    # No --new: retroconsole-config is rebuilt every run with the same version
+    # string but different bytes, so repo-add MUST update (re-checksum) the
+    # existing entry. With --new it would skip the update, leaving the db
+    # checksum pointing at the old file and pacstrap rejecting it as corrupt.
+    (cd "${REPO_DIR}" && repo-add --remove retroconsole.db.tar.gz ./*.pkg.tar.zst)
     pacman -Sy --noconfirm
 }
 
