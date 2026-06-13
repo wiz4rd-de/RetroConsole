@@ -42,6 +42,27 @@ if [[ ! -r ${SFS} ]]; then
 fi
 [[ -r ${KERNEL} ]] || die "Cannot find ${KERNEL}"
 
+# Echo the device path of the partition on disk $2 (default ${disk}) whose GPT
+# name (PARTLABEL) is $1, or nothing. Scoped to one disk so a RetroConsole
+# layout on a different disk can never flip the mode or be touched. Always
+# returns 0 (callers test the output for emptiness), so it is safe under `set -e`.
+part_by_label() {
+    local want=$1 d=${2:-${disk}} name plabel
+    while read -r name plabel; do
+        if [[ ${plabel} == "${want}" ]]; then
+            echo "/dev/${name}"
+            return 0
+        fi
+    done < <(lsblk -rno NAME,PARTLABEL "${d}")
+    return 0
+}
+
+# True if disk $1 already carries a full RetroConsole layout.
+disk_has_rc_layout() {
+    [[ -n $(part_by_label rcsys "$1") && -n $(part_by_label rcuser "$1") \
+       && -n $(part_by_label rcesp "$1") ]]
+}
+
 # --- Pick the target disk -------------------------------------------------
 
 # The disk the live medium itself lives on must never be a target.
@@ -52,41 +73,64 @@ if [[ -n ${boot_src} && ${boot_src} == /dev/* ]]; then
     [[ -z ${boot_disk} ]] && boot_disk=$(basename "${boot_src}")
 fi
 
-target=""
-target_size=0
+# Every eligible internal disk (no removable media, no live medium, no loop/cd/zram).
+disks=()
 while read -r name size rm type; do
     [[ ${type} == disk ]] || continue
     [[ ${rm} -eq 0 ]] || continue                      # skip removable (USB sticks)
     [[ ${name} == "${boot_disk}" ]] && continue        # skip the live medium
     [[ ${name} == loop* || ${name} == sr* || ${name} == zram* ]] && continue
-    if (( size > target_size )); then
-        target=${name}
-        target_size=${size}
-    fi
+    disks+=("${name}")
 done < <(lsblk -dbno NAME,SIZE,RM,TYPE)
 
-[[ -n ${target} ]] || die "No suitable internal disk found."
+[[ ${#disks[@]} -gt 0 ]] || die "No suitable internal disk found."
+
+if [[ ${#disks[@]} -eq 1 ]]; then
+    target=${disks[0]}                                 # one disk: install without asking
+else
+    # More than one disk: never guess (the biggest is often a data drive, not the
+    # OS target). Make the user choose so the wrong disk can't be wiped.
+    clear
+    echo "==============================================="
+    echo "          RetroConsole Installer"
+    echo "==============================================="
+    echo
+    echo "  More than one internal disk was found."
+    echo "  Choose where to install RetroConsole:"
+    echo
+    for i in "${!disks[@]}"; do
+        n=${disks[$i]}
+        m=$(lsblk -dno MODEL "/dev/${n}" | sed 's/^ *//;s/ *$//')
+        s=$(lsblk -dno SIZE "/dev/${n}")
+        note=""
+        if disk_has_rc_layout "/dev/${n}"; then
+            note="   [existing RetroConsole install - data kept]"
+        fi
+        printf "   %d) /dev/%-10s %7s  %s%s\n" "$((i + 1))" "${n}" "${s}" "${m:-unknown}" "${note}"
+    done
+    echo
+    while true; do
+        read -rp "Enter the number of the target disk (or Q to abort): " choice || choice=Q
+        if [[ ${choice} == [Qq] ]]; then
+            echo
+            echo "Aborted. Nothing was changed."
+            systemctl reboot
+            exit 0
+        fi
+        if [[ ${choice} =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#disks[@]} )); then
+            target=${disks[$((choice - 1))]}
+            break
+        fi
+        echo "  Please enter a number between 1 and ${#disks[@]}, or Q to abort."
+    done
+fi
 
 disk=/dev/${target}
+target_size=$(lsblk -dbno SIZE "${disk}")
 model=$(lsblk -dno MODEL "${disk}" | sed 's/^ *//;s/ *$//')
 human_size=$(lsblk -dno SIZE "${disk}")
 
 # --- Fresh vs preserve ----------------------------------------------------
-
-# Echo the device path of the partition on ${disk} whose GPT name (PARTLABEL)
-# is $1, or nothing. Scoped to ${disk} so a RetroConsole layout on some other
-# disk can never flip the mode or be touched. Always returns 0 (callers test
-# the output for emptiness), so it is safe under `set -e`.
-part_by_label() {
-    local want=$1 name plabel
-    while read -r name plabel; do
-        if [[ ${plabel} == "${want}" ]]; then
-            echo "/dev/${name}"
-            return 0
-        fi
-    done < <(lsblk -rno NAME,PARTLABEL "${disk}")
-    return 0
-}
 
 udevadm settle
 sys_part=$(part_by_label rcsys)
