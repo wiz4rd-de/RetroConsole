@@ -21,8 +21,17 @@ gamepad-driven retro gaming UI.
 3. Boot the target computer from it.
 4. Type `YES` at the single confirmation prompt.
 
-**Careful!** This erases the computer's internal drive (the installer picks
-the largest internal disk).
+The installer picks the largest internal disk (at least 24 GiB) and splits it
+into a system partition and a separate user partition for your games and
+settings (`/home`).
+
+**Careful!** A first-time install **erases the whole target disk**.
+**Reinstalling or updating keeps your data:** boot the same — or a newer — ISO
+on a machine that already runs RetroConsole and the installer reinstalls only
+the system, keeping your games and settings on the user partition. (Machines
+first installed with an older ISO that predates this split layout have no
+separate user partition, so reinstalling over one still erases everything — a
+one-time cost.)
 
 After installation the machine boots directly into ES-DE.
 
