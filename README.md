@@ -15,9 +15,11 @@ gamepad-driven retro gaming UI.
 
 ## Install
 
-1. Flash the ISO to a USB stick (`dd`, balenaEtcher, …).
-2. Boot the target computer from it.
-3. Type `YES` at the single confirmation prompt.
+1. Download the latest ISO from the
+   [Releases page](https://github.com/wiz4rd-de/RetroConsole/releases/latest).
+2. Flash it to a USB stick (`dd`, balenaEtcher, …).
+3. Boot the target computer from it.
+4. Type `YES` at the single confirmation prompt.
 
 **Careful!** This erases the computer's internal drive (the installer picks
 the largest internal disk).

@@ -1,3 +1,2 @@
-retro ALL=(root) NOPASSWD: /usr/local/bin/retroconsole-install
 retro ALL=(root) NOPASSWD: /usr/local/bin/retroconsole-update
 retro ALL=(root) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/bin/systemctl restart getty@tty1

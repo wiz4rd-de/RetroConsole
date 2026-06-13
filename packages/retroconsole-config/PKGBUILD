@@ -1,0 +1,33 @@
+# RetroConsole appliance configuration, packaged so fixes reach installed
+# systems through "Update System" (pacman -Syu) instead of a reflash.
+#
+# Scope: system-level files only. Seeds under /home/retro (ES-DE settings,
+# retroarch.cfg, foot.ini, ROM dirs) stay in the image's airootfs — they
+# are runtime-mutable user state an upgrade must not clobber. The live-only
+# installer (retroconsole-install + its sudoers grant) also stays airootfs.
+#
+# Bump pkgver (or pkgrel for a rebuild), run a build, then
+# scripts/publish-repo.sh to ship an update.
+pkgname=retroconsole-config
+pkgver=1.0.0
+pkgrel=2
+pkgdesc="RetroConsole appliance configuration and session scripts"
+arch=('any')
+url="https://github.com/wiz4rd-de/RetroConsole"
+license=('MIT')
+source=('retroconsole-session'
+        'retroconsole-update'
+        'sudoers-retroconsole'
+        '50-retroconsole-network.rules'
+        '50-retroconsole-prefer-hdmi.conf'
+        'vconsole.conf')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+    install -Dm755 retroconsole-session "${pkgdir}/usr/local/bin/retroconsole-session"
+    install -Dm755 retroconsole-update "${pkgdir}/usr/local/bin/retroconsole-update"
+    install -Dm440 sudoers-retroconsole "${pkgdir}/etc/sudoers.d/retroconsole"
+    install -Dm644 50-retroconsole-network.rules "${pkgdir}/etc/polkit-1/rules.d/50-retroconsole-network.rules"
+    install -Dm644 50-retroconsole-prefer-hdmi.conf "${pkgdir}/etc/wireplumber/wireplumber.conf.d/50-retroconsole-prefer-hdmi.conf"
+    install -Dm644 vconsole.conf "${pkgdir}/etc/vconsole.conf"
+}

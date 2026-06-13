@@ -128,7 +128,7 @@ echo ":: Converting live system to installed system..."
 rm -f "${MNT}/etc/retroconsole-live"
 rm -f "${MNT}/etc/mkinitcpio.conf.d/archiso.conf"
 rm -f "${MNT}/usr/local/bin/retroconsole-install"
-sed -i '\|retroconsole-install|d' "${MNT}/etc/sudoers.d/retroconsole"
+rm -f "${MNT}/etc/sudoers.d/retroconsole-live"
 
 # Standard initramfs preset instead of the archiso one
 cat > "${MNT}/etc/mkinitcpio.d/linux.preset" <<'EOF'
