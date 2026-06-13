@@ -82,9 +82,10 @@ jobs:
           cat > "${notes}" <<EOF
           RetroConsole ${version}
 
-          **Fresh install** — flash the ISO to a USB stick, boot the target PC,
-          type \`YES\` at the single prompt. This erases the internal drive.
-          Flashing instructions: \`docs/BUILDING.md\`.
+          **Fresh install** — flash the ISO to a USB stick and boot the target
+          PC. On a single-disk machine, type \`YES\` at the one prompt; if
+          several disks are present, the installer first asks which one to use.
+          The chosen drive is erased. Flashing instructions: \`docs/BUILDING.md\`.
 
           Verify the download:
           \`\`\`
