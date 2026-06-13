@@ -1,0 +1,103 @@
+# Cut a RetroConsole release.
+#
+# Trigger: push a semver tag, e.g.
+#     git tag v0.1.0 && git push origin v0.1.0
+#
+# What it does, with no manual uploads:
+#   1. Builds the ISO (and, as part of that, rebuilds the [retroconsole]
+#      pacman repo: the AUR packages + retroconsole-config).
+#   2. Creates the GitHub Release <tag> with the ISO + its SHA256 attached
+#      (this is the fresh-install medium).
+#   3. Republishes the rolling 'repo' release that installed systems pull
+#      from via Tools -> Update System (the OTA channel).
+#
+# The whole build runs natively on the amd64 runner — no Rosetta, but the
+# same Docker image and scripts used locally, so CI and `make iso` stay in
+# lockstep. Expect ~30-60 min: emulationstation-de and friends compile from
+# source on every release (deliberately fresh, never cached).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+# Never cancel a release mid-build, and never run two at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # mkarchiso + the squashfs + the AUR builds need tens of GB; the stock
+      # runner image ships ~25 GB of toolchains we don't use. Reclaim them.
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
+      - name: Check out the tag
+        uses: actions/checkout@v4
+
+      # Builds the builder image, then runs build-iso.sh inside it: refreshes
+      # profile/airootfs/opt/retroconsole/repo and writes out/*.iso.
+      - name: Build ISO and refresh the [retroconsole] repo
+        run: make iso
+
+      # Container ran as root, so out/ and the repo dir are root-owned. Hand
+      # them back to the runner user so the publish steps can read/write them.
+      - name: Reclaim build outputs
+        run: sudo chown -R "$(id -u):$(id -g)" out profile/airootfs/opt/retroconsole/repo
+
+      # OTA channel: upload the pacman repo (packages + db) to the rolling
+      # 'repo' release. Installed systems update from here.
+      - name: Publish the OTA pacman repo
+        run: scripts/publish-repo.sh
+
+      - name: Stage the ISO for the release
+        id: stage
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          iso=$(ls out/retroconsole-*.iso | head -n1)
+          asset="retroconsole-${version}-x86_64.iso"
+          cp "${iso}" "out/${asset}"
+          ( cd out && sha256sum "${asset}" > "${asset}.sha256" )
+          echo "asset=out/${asset}" >> "$GITHUB_OUTPUT"
+          echo "checksum=out/${asset}.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Create the GitHub Release with the ISO
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          notes=$(mktemp)
+          cat > "${notes}" <<EOF
+          RetroConsole ${version}
+
+          **Fresh install** — flash the ISO to a USB stick, boot the target PC,
+          type \`YES\` at the single prompt. This erases the internal drive.
+          Flashing instructions: \`docs/BUILDING.md\`.
+
+          Verify the download:
+          \`\`\`
+          sha256sum -c retroconsole-${version}-x86_64.iso.sha256
+          \`\`\`
+
+          **Already installed?** You don't need this ISO — run
+          *Tools → Update System* on the box to pull the latest packages
+          (\`pacman -Syu\`) from the rolling \`repo\` channel.
+          EOF
+          gh release create "${version}" \
+            "${{ steps.stage.outputs.asset }}" \
+            "${{ steps.stage.outputs.checksum }}" \
+            --title "RetroConsole ${version}" \
+            --notes-file "${notes}" \
+            --latest
