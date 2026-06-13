@@ -1,0 +1,18 @@
+# pacman scriptlet for retroconsole-config. Enables the managed-home seed
+# boot oneshot on fresh installs (pacstrap runs this at ISO build) and on
+# existing boxes over OTA (post_upgrade). Not enabled --now: the unit is a
+# boot trigger and takes effect on the next boot; the post-update path in
+# retroconsole-update already runs the seed immediately after an upgrade.
+
+_enable_units() {
+    systemctl enable retroconsole-seed.service
+    # sshd enable + retro:retro password added by #15
+}
+
+post_install() {
+    _enable_units
+}
+
+post_upgrade() {
+    _enable_units
+}
