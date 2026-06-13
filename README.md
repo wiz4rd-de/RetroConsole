@@ -21,9 +21,10 @@ gamepad-driven retro gaming UI.
 3. Boot the target computer from it.
 4. Type `YES` at the single confirmation prompt.
 
-The installer picks the largest internal disk (at least 24 GiB) and splits it
-into a system partition and a separate user partition for your games and
-settings (`/home`).
+With a single internal disk the installer uses it automatically; if several are
+present it lists them and asks which one to install onto, so a data drive is
+never wiped by mistake. The chosen disk (at least 24 GiB) is split into a system
+partition and a separate user partition for your games and settings (`/home`).
 
 **Careful!** A first-time install **erases the whole target disk**.
 **Reinstalling or updating keeps your data:** boot the same — or a newer — ISO
