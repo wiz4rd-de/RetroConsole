@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# RetroConsole managed-home reconciler. OTA (pacman -Syu) only touches packaged
+# files, never /home/retro — so this script is the path by which updated home
+# defaults reach installed boxes. It runs after "Update System" and on every
+# (non-live) boot via retroconsole-seed.service.
+#
+# Override policy (locked — by user-reachability, no stamp file):
+#   * User-reachable from the on-screen UI (ES-DE settings -> es_settings.xml,
+#     plus ROMs / savestates / scraped media / gamelists) -> NEVER touched.
+#   * Not reachable (tool launchers, es_systems.xml, .bash_profile, foot.ini,
+#     retroarch.cfg managed keys, system config) -> ALWAYS force-overwritten to
+#     our value, every run.
+#
+# Idempotent: a second run is a no-op (same result, no errors). Every reconcile
+# block is non-fatal — a seed error must never mark an update FAILED.
+set -uo pipefail
+
+LOG=/var/log/retroconsole-seed.log
+SKEL=/usr/share/retroconsole/skel/home/retro
+HOME_DIR=/home/retro
+
+log() { echo ":: $*" | tee -a "${LOG}"; }
+
+# Live media runs from a tmpfs overlay: there is no persistent /home to seed,
+# and the squashfs already carries fresh defaults. Skip entirely.
+if [[ -e /etc/retroconsole-live ]]; then
+    exit 0
+fi
+
+if [[ ${EUID} -ne 0 ]]; then
+    exec sudo "$0" "$@"
+fi
+
+log "=== RetroConsole seed started: $(date) ==="
+
+# Nothing to do without a skel source or a target home (e.g. before first
+# install). Exit cleanly rather than erroring.
+if [[ ! -d ${SKEL} ]]; then
+    log "skel ${SKEL} missing — nothing to reconcile"
+    exit 0
+fi
+if [[ ! -d ${HOME_DIR} ]]; then
+    log "home ${HOME_DIR} missing — nothing to reconcile"
+    exit 0
+fi
+
+# ensure_kv_force <file> <key> <value>
+# Force a "key = value" line: replace the line if "^key\s*=" is present, else
+# append. awk avoids sed delimiter trouble when the value contains slashes
+# (e.g. paths). Idempotent: re-running yields the same file.
+ensure_kv_force() {
+    local file=$1 key=$2 value=$3 line tmp
+    line="${key} = \"${value}\""
+    [[ -f ${file} ]] || return 0
+    tmp=$(mktemp) || return 1
+    if awk -v key="${key}" -v line="${line}" '
+        $0 ~ "^" key "[[:space:]]*=" { print line; found=1; next }
+        { print }
+        END { if (!found) print line }
+    ' "${file}" > "${tmp}"; then
+        cat "${tmp}" > "${file}"
+    fi
+    rm -f "${tmp}"
+}
+
+# --- Managed FILES: force-overwrite from skel ----------------------------- #
+# Tool launchers are root-owned 0755 (match profiledef.sh): the kiosk runs them
+# from the ES-DE Tools menu, the user can't edit them from the on-screen UI.
+if compgen -G "${SKEL}/ROMs/tools/*.sh" >/dev/null; then
+    for f in "${SKEL}"/ROMs/tools/*.sh; do
+        name=$(basename "${f}")
+        if install -D -o root -g root -m 0755 "${f}" "${HOME_DIR}/ROMs/tools/${name}"; then
+            log "tool launcher: ${name}"
+        else
+            log "WARN: failed to install tool launcher ${name}"
+        fi
+    done
+fi
+
+# Config files the user can't reach from the UI: retro:retro 0644.
+for rel in \
+    "ES-DE/custom_systems/es_systems.xml" \
+    ".bash_profile" \
+    ".config/foot/foot.ini"
+do
+    src="${SKEL}/${rel}"
+    [[ -f ${src} ]] || continue
+    if install -D -o retro -g retro -m 0644 "${src}" "${HOME_DIR}/${rel}"; then
+        log "config file: ${rel}"
+    else
+        log "WARN: failed to install config file ${rel}"
+    fi
+done
+
+# --- Managed KEYS in retroarch.cfg: force to our value -------------------- #
+# RetroArch re-saves the whole config on exit, so a managed key must be forced
+# every run. es_settings.xml is user-reachable and is NEVER touched here.
+RA_CFG="${HOME_DIR}/.config/retroarch/retroarch.cfg"
+if [[ -f ${RA_CFG} ]]; then
+    ensure_kv_force "${RA_CFG}" "joypad_autoconfig_dir" "/usr/share/libretro/autoconfig"
+    # audio keys (audio_driver, audio_latency) added by #14 after T630 diagnosis
+    chown retro:retro "${RA_CFG}" || log "WARN: failed to chown ${RA_CFG}"
+    log "retroarch.cfg keys reconciled"
+else
+    log "retroarch.cfg absent — skipping managed keys"
+fi
+
+log "=== RetroConsole seed finished: $(date) ==="
+exit 0

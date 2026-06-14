@@ -69,8 +69,26 @@ done
 echo ":: Building retroconsole-config..."
 rm -rf "${BUILD_DIR}/retroconsole-config"
 cp -r /build/packages/retroconsole-config "${BUILD_DIR}/retroconsole-config"
+
+# Generate the package skel from the airootfs /home/retro tree so the two can
+# never drift: airootfs stays the single source of truth, retroconsole-seed
+# reconciles installed boxes from the packaged copy at the neutral path
+# /usr/share/retroconsole/skel/home/retro/ (A1/#8, A3/#10). The allowlist (only
+# the "unreachable" managed files the override policy force-overwrites) lives in
+# scripts/gen-config-skel.sh — shared with the fast-tier package assertion
+# (#28) so CI exercises this exact generation step.
+echo ":: Generating retroconsole-config skel from airootfs allowlist..."
+/build/scripts/gen-config-skel.sh \
+    /build/profile/airootfs/home/retro \
+    "${BUILD_DIR}/retroconsole-config/skel/home/retro"
+
 chown -R builder "${BUILD_DIR}/retroconsole-config"
-(cd "${BUILD_DIR}/retroconsole-config" && sudo -u builder makepkg --noconfirm --force)
+# --nodeps: retroconsole-config is data-only — its depends (openssh) are RUNTIME
+# deps installed into the image by pacstrap, not needed to build the package.
+# Without this, makepkg's runtime-dep check aborts in a clean builder where
+# openssh isn't installed ("Could not resolve all dependencies"). Matches how
+# scripts/assert-config-pkg.sh builds it.
+(cd "${BUILD_DIR}/retroconsole-config" && sudo -u builder makepkg --noconfirm --force --nodeps)
 rm -f "${REPO_DIR}"/retroconsole-config-*.pkg.tar.zst
 cp "${BUILD_DIR}/retroconsole-config"/retroconsole-config-*.pkg.tar.zst "${REPO_DIR}/"
 refresh_repo
