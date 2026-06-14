@@ -83,7 +83,12 @@ echo ":: Generating retroconsole-config skel from airootfs allowlist..."
     "${BUILD_DIR}/retroconsole-config/skel/home/retro"
 
 chown -R builder "${BUILD_DIR}/retroconsole-config"
-(cd "${BUILD_DIR}/retroconsole-config" && sudo -u builder makepkg --noconfirm --force)
+# --nodeps: retroconsole-config is data-only — its depends (openssh) are RUNTIME
+# deps installed into the image by pacstrap, not needed to build the package.
+# Without this, makepkg's runtime-dep check aborts in a clean builder where
+# openssh isn't installed ("Could not resolve all dependencies"). Matches how
+# scripts/assert-config-pkg.sh builds it.
+(cd "${BUILD_DIR}/retroconsole-config" && sudo -u builder makepkg --noconfirm --force --nodeps)
 rm -f "${REPO_DIR}"/retroconsole-config-*.pkg.tar.zst
 cp "${BUILD_DIR}/retroconsole-config"/retroconsole-config-*.pkg.tar.zst "${REPO_DIR}/"
 refresh_repo
