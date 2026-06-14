@@ -66,7 +66,7 @@ for f in "${FILES[@]}"; do
     fi
 done
 
-# shellcheck: --shell=bash so the shebang-less files (.install, .bash_profile,
+# Pass --shell=bash so the shebang-less files (.install, .bash_profile,
 # profiledef.sh) are checked as bash instead of being skipped / defaulting to sh.
 if ! shellcheck --shell=bash --severity="${SEVERITY}" "${FILES[@]}"; then
     rc=1
