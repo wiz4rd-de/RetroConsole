@@ -1,0 +1,86 @@
+# RetroConsole pull-request CI — tiered by the PR's base branch.
+#
+# The branch flow is feat/* -> develop -> rc -> main (see docs/BUILDING.md).
+# A PR runs a heavier tier the closer its base is to main, so the slow tests
+# gate only the infrequent promotions:
+#
+#   base develop -> FAST    seconds-2min   shellcheck/bash -n, pkg build+assert, seed/reconcile
+#   base rc      -> MEDIUM  ~30+min        make iso
+#   base main    -> FULL    ~1h+           make iso + QEMU smoke (NON-BLOCKING until #34)
+#
+# Stable job names — branch protection references these by string, so DO NOT
+# rename without updating the protection rules (#32/#34):
+#   fast-shellcheck, fast-pkg-assert, fast-seed-reconcile  -> lean gate (#32), required on develop
+#   medium-make-iso                                        -> lean gate (#32), required on rc + main
+#   full-qemu-smoke                                        -> tighten (#34), required on main LATER
+#
+# Bootstrap note: this workflow and its tier jobs were built ungated and merged
+# into develop via the pre-gate process. Same-repo PRs run ci.yml from the PR
+# head, so the fast tier dogfoods on the very PRs that add it. Branch protection
+# (the lean gate, #32) lands only after these jobs have produced runs whose
+# check names can be marked required.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, rc, main]
+
+# Least privilege; a job widens this only if it needs to.
+permissions:
+  contents: read
+
+# One in-flight run per PR — a force-push supersedes the previous run rather
+# than piling up. (release.yml deliberately does the opposite: never cancel a
+# release. The long full-qemu-smoke tier accepts being superseded by a newer
+# push to the same PR, which is the desired behaviour here.)
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================= FAST tier ===
+  # Gate: feat/* -> develop. Steps filled in by #27/#28/#29.
+  fast-shellcheck:
+    name: fast-shellcheck
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "stub: fast-shellcheck (#27 fills this in)"'
+
+  fast-pkg-assert:
+    name: fast-pkg-assert
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "stub: fast-pkg-assert (#28 fills this in)"'
+
+  fast-seed-reconcile:
+    name: fast-seed-reconcile
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "stub: fast-seed-reconcile (#29 fills this in)"'
+
+  # =========================================================== MEDIUM tier ===
+  # Gate: develop -> rc. Steps filled in by #30.
+  medium-make-iso:
+    name: medium-make-iso
+    if: github.base_ref == 'rc'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "stub: medium-make-iso (#30 fills this in)"'
+
+  # ============================================================= FULL tier ===
+  # Gate: rc -> main. Steps filled in by #31. Runs NON-BLOCKING until #34
+  # promotes full-qemu-smoke to a required check.
+  full-qemu-smoke:
+    name: full-qemu-smoke
+    if: github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "stub: full-qemu-smoke (#31 fills this in)"'
