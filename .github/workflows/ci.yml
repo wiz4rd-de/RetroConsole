@@ -129,5 +129,31 @@ jobs:
     if: github.base_ref == 'main'
     runs-on: ubuntu-latest
     steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
       - uses: actions/checkout@v4
-      - run: 'echo "stub: full-qemu-smoke (#31 fills this in)"'
+      - name: Build ISO
+        run: make iso
+      - name: Install QEMU + OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 ovmf socat
+      # Boot smoke under both firmwares (TCG software emulation — no /dev/kvm on
+      # hosted runners). Captures serial + screendumps; fails only on a panic.
+      # The boot-to-ES-DE / install-matrix / OTA-sim hardening is the bake-in
+      # work (see scripts/test-qemu-ci.sh and #31 → promoted to required by #34).
+      - name: Headless boot smoke (BIOS)
+        run: scripts/test-qemu-ci.sh --bios --timeout=900
+      - name: Headless boot smoke (UEFI)
+        run: scripts/test-qemu-ci.sh --uefi --timeout=900
+      - name: Upload QEMU smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-smoke-pr${{ github.event.pull_request.number }}
+          path: out/ci-smoke
+          retention-days: 7
+          if-no-files-found: warn
