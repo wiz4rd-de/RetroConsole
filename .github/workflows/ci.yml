@@ -78,7 +78,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: 'echo "stub: fast-seed-reconcile (#29 fills this in)"'
+      # Fabricate an "old /home/retro", run retroconsole-seed, assert the M10
+      # override policy (managed forced, es_settings.xml + user data untouched,
+      # idempotent, live-guarded). Arch container: the seed installs files as
+      # user 'retro'. diffutils = cmp/diff; the rest is in the base image.
+      - name: retroconsole-seed override-policy test
+        run: |
+          docker run --rm -v "$PWD":/build:ro -w /build archlinux:latest bash -c '
+            set -e
+            sed -i "s/^#\?DisableSandbox.*/DisableSandbox/" /etc/pacman.conf || true
+            grep -q "^DisableSandbox" /etc/pacman.conf || sed -i "/^\[options\]/a DisableSandbox" /etc/pacman.conf
+            pacman -Sy --noconfirm --needed diffutils >/dev/null
+            SEED_RECONCILE_TEST=1 scripts/test-seed-reconcile.sh
+          '
 
   # =========================================================== MEDIUM tier ===
   # Gate: develop -> rc. Steps filled in by #30.
