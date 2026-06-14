@@ -46,7 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: 'echo "stub: fast-shellcheck (#27 fills this in)"'
+      - name: Ensure shellcheck
+        run: command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y shellcheck; }
+      - name: shellcheck + bash -n sweep over all shell scripts
+        run: scripts/lint-shell.sh
 
   fast-pkg-assert:
     name: fast-pkg-assert
