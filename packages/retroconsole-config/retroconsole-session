@@ -11,4 +11,7 @@ fi
 
 export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-de}"
 
-exec cage -- es-de
+# retroconsole-launch runs inside cage: it pins RetroArch's video_refresh_rate
+# to the refresh cage is actually driving (kills the audio drift from a 50Hz
+# panel vs RetroArch's assumed 60Hz, #13/#14), then exec's ES-DE.
+exec cage -- /usr/local/bin/retroconsole-launch
