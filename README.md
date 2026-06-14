@@ -1,3 +1,5 @@
+![RetroConsole](docs/retroconsole-logo.png)
+
 # RetroConsole
 
 A retrogaming distro installed directly onto bare metal: flash the ISO, boot
