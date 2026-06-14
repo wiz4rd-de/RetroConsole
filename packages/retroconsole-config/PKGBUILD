@@ -10,7 +10,7 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=3
+pkgrel=4
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
