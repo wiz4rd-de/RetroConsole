@@ -73,28 +73,14 @@ cp -r /build/packages/retroconsole-config "${BUILD_DIR}/retroconsole-config"
 # Generate the package skel from the airootfs /home/retro tree so the two can
 # never drift: airootfs stays the single source of truth, retroconsole-seed
 # reconciles installed boxes from the packaged copy at the neutral path
-# /usr/share/retroconsole/skel/home/retro/ (A1/#8, A3/#10). Only an allowlisted
-# subset is packaged — the "unreachable" managed files the override policy
-# force-overwrites. User-reachable state (es_settings.xml, ROMs, savestates,
-# media, gamelists) is deliberately excluded.
-SKEL_SRC=/build/profile/airootfs/home/retro
-SKEL_DST="${BUILD_DIR}/retroconsole-config/skel/home/retro"
-SKEL_ALLOWLIST=(
-    "ROMs/tools/*.sh"                       # tool launchers (root:root 0755)
-    "ES-DE/custom_systems/es_systems.xml"   # systems definition
-    ".bash_profile"                         # kiosk session bootstrap
-    ".config/foot/foot.ini"                 # terminal config
-)
+# /usr/share/retroconsole/skel/home/retro/ (A1/#8, A3/#10). The allowlist (only
+# the "unreachable" managed files the override policy force-overwrites) lives in
+# scripts/gen-config-skel.sh — shared with the fast-tier package assertion
+# (#28) so CI exercises this exact generation step.
 echo ":: Generating retroconsole-config skel from airootfs allowlist..."
-rm -rf "${BUILD_DIR}/retroconsole-config/skel"
-for pattern in "${SKEL_ALLOWLIST[@]}"; do
-    for src in "${SKEL_SRC}"/${pattern}; do
-        [[ -e ${src} ]] || continue
-        rel="${src#"${SKEL_SRC}/"}"
-        mkdir -p "${SKEL_DST}/$(dirname "${rel}")"
-        cp "${src}" "${SKEL_DST}/${rel}"
-    done
-done
+/build/scripts/gen-config-skel.sh \
+    /build/profile/airootfs/home/retro \
+    "${BUILD_DIR}/retroconsole-config/skel/home/retro"
 
 chown -R builder "${BUILD_DIR}/retroconsole-config"
 (cd "${BUILD_DIR}/retroconsole-config" && sudo -u builder makepkg --noconfirm --force)

@@ -78,6 +78,13 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME}"
+          # Final tags (vX.Y.Z) become the public "Latest"; prerelease tags
+          # (vX.Y.Z-rc1, any -suffix) publish as a prerelease and must NOT grab
+          # the Latest download. A case-match avoids the !/!= shell pitfall.
+          case "${GITHUB_REF_NAME}" in
+            *-*) release_flags="--prerelease" ;;
+            *)   release_flags="--latest" ;;
+          esac
           notes=$(mktemp)
           cat > "${notes}" <<EOF
           RetroConsole ${version}
@@ -101,4 +108,4 @@ jobs:
             "${{ steps.stage.outputs.checksum }}" \
             --title "RetroConsole ${version}" \
             --notes-file "${notes}" \
-            --latest
+            "${release_flags}"
