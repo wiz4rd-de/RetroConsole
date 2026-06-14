@@ -2,8 +2,11 @@
 # RetroConsole system update: full pacman upgrade, shown on screen and logged.
 # Run from the ES-DE "Tools" menu (foot terminal → scoped NOPASSWD sudo) or a
 # shell. Output streams to the terminal AND appends to the log via tee, so the
-# user sees live progress; a final keypress gate keeps the result on screen
-# until they choose to return to ES-DE.
+# user sees live progress; a timed auto-return keeps the result on screen
+# briefly, then returns to ES-DE on its own. The appliance is controller-first
+# with no keyboard, and a gamepad's evdev events never reach the foot terminal
+# as keystrokes — so each gate is a `read -t` that auto-continues on timeout
+# while still letting a keyboard, if present, press Enter to dismiss at once.
 set -uo pipefail
 
 LOG=/var/log/retroconsole-update.log
@@ -13,7 +16,7 @@ LOG=/var/log/retroconsole-update.log
 if [[ -e /etc/retroconsole-live ]]; then
     echo "This is the live USB session — updates can't be saved here."
     echo "Install RetroConsole to the internal disk first, then update."
-    read -rp "Press Enter to return..." _
+    read -t 8 -rp "Returning in 8s (or press Enter)..." _ || true
     exit 0
 fi
 
@@ -44,8 +47,13 @@ fi
 echo
 if [[ ${status} -eq 0 ]]; then
     echo "Update complete."
+    # Success: brief pause, then auto-return. `read -t` returns non-zero on
+    # timeout; the `|| true` keeps the script going without touching ${status}.
+    read -t 8 -rp "Returning to ES-DE in 8s..." _ || true
 else
     echo "Update FAILED (exit ${status}). See ${LOG}."
+    # Failure: longer pause so the error stays readable (photograph / act on);
+    # the full log persists at ${LOG} for ssh/Shell follow-up. Enter dismisses.
+    read -t 30 -rp "Returning to ES-DE in 30s (or press Enter)..." _ || true
 fi
-read -rp "Press Enter to return to ES-DE..." _
 exit "${status}"
