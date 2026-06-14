@@ -17,9 +17,10 @@ url="https://github.com/wiz4rd-de/RetroConsole"
 license=('MIT')
 # openssh: pulled over OTA for the field-debug sshd (B3/#15). wlr-randr: read
 # the live output refresh in-session to pin RetroArch's audio clock to the panel
-# (retroconsole-launch, #14). Declared here so existing boxes get the binaries
-# on the next "Update System".
-depends=('openssh' 'wlr-randr')
+# (retroconsole-launch, #14). wireplumber: retroconsole-launch uses wpctl to pin
+# the default sink to full volume (#13). Declared here so existing boxes get the
+# binaries on the next "Update System".
+depends=('openssh' 'wlr-randr' 'wireplumber')
 # Scriptlet enables retroconsole-seed.service on install/upgrade (A4/#11).
 install=retroconsole-config.install
 source=('retroconsole-session'

@@ -14,6 +14,10 @@
 # the airootfs default (50Hz, the PAL box) when no refresh can be read, so audio
 # is never left worse than the static pin.
 #
+# It also pins the default audio sink to full volume: WirePlumber 0.5 starts
+# new routes at 40% (#13), so a fresh box plays quiet. This is a TV appliance,
+# so max the source and let the TV control loudness.
+#
 # Every step is non-fatal by design: a detection or write failure must never
 # stop ES-DE from starting, so the script always reaches `exec es-de`.
 set -uo pipefail
@@ -70,6 +74,23 @@ set_refresh() {
     fi
 }
 
+# Pin the default audio sink to full volume. WirePlumber 0.5 starts a new
+# route's volume at 40% (device.routes.default-sink-volume = 0.4), so a fresh
+# box plays quiet (#13). This is a TV appliance — volume is set at the TV — so
+# max the source each session start and let the TV attenuate. Bounded retry:
+# the default sink may not exist the instant cage's child starts. Non-fatal.
+pin_volume() {
+    local attempt
+    command -v wpctl >/dev/null 2>&1 || return 1
+    for attempt in 1 2 3 4 5; do
+        if wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.0 >/dev/null 2>&1; then
+            return 0
+        fi
+        [[ ${attempt} -lt 5 ]] && sleep 0.2
+    done
+    return 1
+}
+
 if hz=$(read_refresh); then
     set_refresh "${hz}" || true
     log "pinned video_refresh_rate=${hz} (read from display)"
@@ -78,6 +99,12 @@ else
     # the fallback is present — an OTA-upgraded box may lack the key entirely.
     set_refresh "${FALLBACK_HZ}" || true
     log "pinned video_refresh_rate=${FALLBACK_HZ} (fallback: display refresh unreadable)"
+fi
+
+if pin_volume; then
+    log "pinned default sink volume to 100%"
+else
+    log "could not pin default sink volume (wpctl missing or no default sink)"
 fi
 
 exec es-de
