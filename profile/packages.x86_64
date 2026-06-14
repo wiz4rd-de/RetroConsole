@@ -39,6 +39,9 @@ mesa
 vulkan-intel
 vulkan-nouveau
 vulkan-radeon
+# wlr-randr: read the live output refresh in-session so retroconsole-launch can
+# pin RetroArch's audio clock to the panel's actual rate (#14).
+wlr-randr
 
 # Gaming stack. Cores must include ES-DE's per-system defaults
 # (nes=mesen, gb/gbc=gambatte, gba=mgba, snes=snes9x,

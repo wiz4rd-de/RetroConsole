@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# RetroConsole kiosk launcher — runs INSIDE cage (retroconsole-session spawns it
+# as `cage -- retroconsole-launch`), so a Wayland display exists and wlr-randr
+# can query the compositor.
+#
+# Why this exists: RetroArch times audio against video_refresh_rate (it assumes
+# 60Hz). When the panel runs a different refresh — the field T630's TV is a
+# European 1080p@50 (PAL) panel — the mismatch drifts the audio output buffer
+# dry on a fixed cycle: the buzz/stutter diagnosed in #13 (audio_driver and
+# audio_latency were ruled out there as red herrings). Fix: pin
+# video_refresh_rate to the refresh cage is ACTUALLY driving, read at session
+# start, before ES-DE (and the RetroArch it launches) reads the config. Being
+# display-derived it adapts to any panel (50->50, 60->60, ...). Falls back to
+# the airootfs default (50Hz, the PAL box) when no refresh can be read, so audio
+# is never left worse than the static pin.
+#
+# Every step is non-fatal by design: a detection or write failure must never
+# stop ES-DE from starting, so the script always reaches `exec es-de`.
+set -uo pipefail
+
+RA_CFG="${HOME}/.config/retroarch/retroarch.cfg"
+FALLBACK_HZ=50
+
+# Field-debug breadcrumb to the journal (viewable over ssh:
+# `journalctl -t retroconsole-launch`). Non-fatal, never blocks the session.
+log() { command -v logger >/dev/null 2>&1 && logger -t retroconsole-launch "$*" || true; }
+
+# Pull the active output's current-mode refresh out of `wlr-randr`, e.g.
+#   "  1920x1080 px, 50.000000 Hz (preferred, current)" -> "50.000000"
+# Reads stdin so it is trivially unit-testable with captured output.
+refresh_from_wlr_randr() {
+    awk '/[Cc]urrent/ { for (i = 1; i <= NF; i++) if ($i == "Hz") { print $(i - 1); exit } }'
+}
+
+# Read the live refresh, retrying briefly: at cage startup the output may not be
+# configured the instant this child runs. Bounded (~1s) so a headless / no-output
+# boot, where the value can never be read, falls back promptly.
+read_refresh() {
+    local hz attempt
+    command -v wlr-randr >/dev/null 2>&1 || return 1
+    for attempt in 1 2 3 4 5; do
+        hz=$(wlr-randr 2>/dev/null | refresh_from_wlr_randr)
+        if [[ ${hz} =~ ^[0-9]+(\.[0-9]+)?$ ]] && (( ${hz%.*} >= 24 && ${hz%.*} <= 240 )); then
+            printf '%s\n' "${hz}"
+            return 0
+        fi
+        [[ ${attempt} -lt 5 ]] && sleep 0.2
+    done
+    return 1
+}
+
+# Pin video_refresh_rate to $1: replace the first occurrence, else append.
+# RetroArch honors the first occurrence and resaves the whole file on exit, so
+# re-asserting it each session start keeps the value stable across resaves.
+set_refresh() {
+    local val=$1 line tmp
+    line="video_refresh_rate = \"${val}\""
+    if [[ -f ${RA_CFG} ]]; then
+        tmp=$(mktemp) || return 1
+        if awk -v line="${line}" '
+            $0 ~ /^video_refresh_rate[[:space:]]*=/ { print line; found = 1; next }
+            { print }
+            END { if (!found) print line }
+        ' "${RA_CFG}" > "${tmp}"; then
+            cat "${tmp}" > "${RA_CFG}"
+        fi
+        rm -f "${tmp}"
+    else
+        mkdir -p "$(dirname "${RA_CFG}")" && printf '%s\n' "${line}" > "${RA_CFG}"
+    fi
+}
+
+if hz=$(read_refresh); then
+    set_refresh "${hz}" || true
+    log "pinned video_refresh_rate=${hz} (read from display)"
+else
+    # No reading (wlr-randr missing, output not ready, or unparseable): ensure
+    # the fallback is present — an OTA-upgraded box may lack the key entirely.
+    set_refresh "${FALLBACK_HZ}" || true
+    log "pinned video_refresh_rate=${FALLBACK_HZ} (fallback: display refresh unreadable)"
+fi
+
+exec es-de

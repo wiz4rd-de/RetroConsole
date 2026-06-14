@@ -64,6 +64,7 @@ check() {  # check <path> <expected-symbolic-mode>
 
 # Static package() targets — paths + modes from the PKGBUILD.
 check usr/local/bin/retroconsole-session -rwxr-xr-x
+check usr/local/bin/retroconsole-launch  -rwxr-xr-x
 check usr/local/bin/retroconsole-update  -rwxr-xr-x
 check usr/local/bin/retroconsole-seed    -rwxr-xr-x
 check etc/systemd/system/retroconsole-seed.service                       -rw-r--r--

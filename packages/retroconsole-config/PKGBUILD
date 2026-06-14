@@ -10,17 +10,20 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=4
+pkgrel=5
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
 license=('MIT')
-# openssh: pulled over OTA for the field-debug sshd (B3/#15); declared here so
-# existing boxes get the binary on the next "Update System".
-depends=('openssh')
+# openssh: pulled over OTA for the field-debug sshd (B3/#15). wlr-randr: read
+# the live output refresh in-session to pin RetroArch's audio clock to the panel
+# (retroconsole-launch, #14). Declared here so existing boxes get the binaries
+# on the next "Update System".
+depends=('openssh' 'wlr-randr')
 # Scriptlet enables retroconsole-seed.service on install/upgrade (A4/#11).
 install=retroconsole-config.install
 source=('retroconsole-session'
+        'retroconsole-launch'
         'retroconsole-update'
         'retroconsole-seed'
         'retroconsole-seed.service'
@@ -28,10 +31,11 @@ source=('retroconsole-session'
         '50-retroconsole-network.rules'
         '50-retroconsole-prefer-hdmi.conf'
         'vconsole.conf')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
     install -Dm755 retroconsole-session "${pkgdir}/usr/local/bin/retroconsole-session"
+    install -Dm755 retroconsole-launch "${pkgdir}/usr/local/bin/retroconsole-launch"
     install -Dm755 retroconsole-update "${pkgdir}/usr/local/bin/retroconsole-update"
     install -Dm755 retroconsole-seed "${pkgdir}/usr/local/bin/retroconsole-seed"
     install -Dm644 retroconsole-seed.service "${pkgdir}/etc/systemd/system/retroconsole-seed.service"
