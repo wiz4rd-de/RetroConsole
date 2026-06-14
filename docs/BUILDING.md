@@ -78,6 +78,49 @@ diskutil unmountDisk /dev/diskN
 sudo dd if=out/retroconsole-*.iso of=/dev/rdiskN bs=4m status=progress
 ```
 
+## Branching & CI gates
+
+Changes flow through four branches, left to right — a merge is only ever made
+in this direction:
+
+```
+feat/* ──▶ develop ──▶ rc ──▶ main
+```
+
+- **`feat/*`** — one branch per change, cut from `develop`.
+- **`develop`** — integration branch; where day-to-day work lands.
+- **`rc`** — **long-lived** staging branch (not recreated per release). It
+  exists for one reason: so the slow tests gate only the infrequent
+  `rc → main` promotion instead of every `feat → develop` merge.
+- **`main`** — stable branch; release tags are cut from here.
+
+CI (`.github/workflows/ci.yml`) runs a different **tier** of tests depending on
+which branch a pull request targets — cheap-and-broad near `develop`,
+slow-and-thorough near `main`:
+
+| PR base | Tier | What runs | ~time |
+|---------|------|-----------|-------|
+| `develop` | **fast** | `shellcheck` + `bash -n` sweep; build `retroconsole-config` and assert its contents; `retroconsole-seed` override-policy (seed/reconcile) test | seconds–~2 min |
+| `rc` | **medium** | full `make iso` (proves the image assembles) | ~30+ min |
+| `main` | **full** | `make iso` + QEMU smoke (boot-to-ES-DE; BIOS+UEFI install→boot matrix; OTA-upgrade sim) | ~1 h+ |
+
+The full tier runs QEMU in **TCG software emulation** — GitHub-hosted runners
+have no `/dev/kvm` — which is the second reason (after wall-clock) it sits only
+at the `rc → main` edge. A self-hosted runner with `/dev/kvm` is the escape
+hatch if that tier's runtime becomes a problem.
+
+**Staged strictness.** The gate tightens in two steps, not all at once:
+
+1. **Lean gate first** — branch protection requires only the **fast** checks on
+   `develop` and the **medium** `make iso` on `rc`/`main`. The full QEMU tier
+   runs **non-blocking** (it reports but cannot block a merge) while it earns a
+   track record.
+2. **Tighten later** — once the full tier has proven reliable, its
+   `full-qemu-smoke` check is promoted to a required check on `rc → main`.
+
+A release is the far end of this pipe: work reaches `main` through the gates
+above, then a tag cut from `main` runs `release.yml` (below).
+
 ## Releasing
 
 Releases are cut by CI (`.github/workflows/release.yml`), not by hand — no

@@ -30,6 +30,17 @@ fi
 status=${PIPESTATUS[0]}
 echo "=== Finished with status ${status}: $(date) ===" | tee -a "${LOG}"
 
+# Reconcile managed home defaults after a successful upgrade so newly packaged
+# values reach this box (OTA = pacman -Syu never touches /home). Non-fatal: a
+# seed error must not flip the update result to FAILED, so it does not change
+# ${status} and its own exit code is ignored.
+if [[ ${status} -eq 0 ]]; then
+    {
+        echo "=== Reconciling managed home defaults: $(date) ==="
+        /usr/local/bin/retroconsole-seed || echo "Seed reported an error (non-fatal)."
+    } 2>&1 | tee -a "${LOG}"
+fi
+
 echo
 if [[ ${status} -eq 0 ]]; then
     echo "Update complete."

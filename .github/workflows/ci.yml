@@ -1,0 +1,159 @@
+# RetroConsole pull-request CI — tiered by the PR's base branch.
+#
+# The branch flow is feat/* -> develop -> rc -> main (see docs/BUILDING.md).
+# A PR runs a heavier tier the closer its base is to main, so the slow tests
+# gate only the infrequent promotions:
+#
+#   base develop -> FAST    seconds-2min   shellcheck/bash -n, pkg build+assert, seed/reconcile
+#   base rc      -> MEDIUM  ~30+min        make iso
+#   base main    -> FULL    ~1h+           make iso + QEMU smoke (NON-BLOCKING until #34)
+#
+# Stable job names — branch protection references these by string, so DO NOT
+# rename without updating the protection rules (#32/#34):
+#   fast-shellcheck, fast-pkg-assert, fast-seed-reconcile  -> lean gate (#32), required on develop
+#   medium-make-iso                                        -> lean gate (#32), required on rc + main
+#   full-qemu-smoke                                        -> tighten (#34), required on main LATER
+#
+# Bootstrap note: this workflow and its tier jobs were built ungated and merged
+# into develop via the pre-gate process. Same-repo PRs run ci.yml from the PR
+# head, so the fast tier dogfoods on the very PRs that add it. Branch protection
+# (the lean gate, #32) lands only after these jobs have produced runs whose
+# check names can be marked required.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, rc, main]
+
+# Least privilege; a job widens this only if it needs to.
+permissions:
+  contents: read
+
+# One in-flight run per PR — a force-push supersedes the previous run rather
+# than piling up. (release.yml deliberately does the opposite: never cancel a
+# release. The long full-qemu-smoke tier accepts being superseded by a newer
+# push to the same PR, which is the desired behaviour here.)
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================= FAST tier ===
+  # Gate: feat/* -> develop. Steps filled in by #27/#28/#29.
+  fast-shellcheck:
+    name: fast-shellcheck
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure shellcheck
+        run: command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y shellcheck; }
+      - name: shellcheck + bash -n sweep over all shell scripts
+        run: scripts/lint-shell.sh
+
+  fast-pkg-assert:
+    name: fast-pkg-assert
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Build retroconsole-config in an Arch container (makepkg is Arch-native),
+      # the same way every Arch step here runs — docker run, not a `container:`
+      # job (archlinux ships no node for actions/*). Read-only mount; the script
+      # builds into the container's /tmp and never writes the repo. DisableSandbox
+      # mirrors docker/Dockerfile (pacman's download sandbox; harmless natively).
+      - name: Build retroconsole-config + assert package contents
+        run: |
+          docker run --rm -v "$PWD":/build:ro -w /build archlinux:latest bash -c '
+            set -e
+            sed -i "s/^#\?DisableSandbox.*/DisableSandbox/" /etc/pacman.conf || true
+            grep -q "^DisableSandbox" /etc/pacman.conf || sed -i "/^\[options\]/a DisableSandbox" /etc/pacman.conf
+            pacman -Sy --noconfirm --needed base-devel >/dev/null
+            scripts/assert-config-pkg.sh
+          '
+
+  fast-seed-reconcile:
+    name: fast-seed-reconcile
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Fabricate an "old /home/retro", run retroconsole-seed, assert the M10
+      # override policy (managed forced, es_settings.xml + user data untouched,
+      # idempotent, live-guarded). Arch container: the seed installs files as
+      # user 'retro'. diffutils = cmp/diff; the rest is in the base image.
+      - name: retroconsole-seed override-policy test
+        run: |
+          docker run --rm -v "$PWD":/build:ro -w /build archlinux:latest bash -c '
+            set -e
+            sed -i "s/^#\?DisableSandbox.*/DisableSandbox/" /etc/pacman.conf || true
+            grep -q "^DisableSandbox" /etc/pacman.conf || sed -i "/^\[options\]/a DisableSandbox" /etc/pacman.conf
+            pacman -Sy --noconfirm --needed diffutils >/dev/null
+            SEED_RECONCILE_TEST=1 scripts/test-seed-reconcile.sh
+          '
+
+  # =========================================================== MEDIUM tier ===
+  # Gate: develop -> rc. Steps filled in by #30.
+  medium-make-iso:
+    name: medium-make-iso
+    if: github.base_ref == 'rc'
+    runs-on: ubuntu-latest
+    steps:
+      # mkarchiso + squashfs + AUR builds need tens of GB; reclaim the toolchains
+      # we don't use (same step as release.yml). ~30+ min total (AUR compiles
+      # fresh) — acceptable at the develop -> rc cadence; the whole reason rc exists.
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+      - uses: actions/checkout@v4
+      # Build-only: proves the image assembles. NO OTA publish, NO release —
+      # those are release.yml's (tag-triggered). The boot test is the full tier (#31).
+      - name: Build ISO
+        run: make iso
+      - name: Upload ISO artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retroconsole-iso-pr${{ github.event.pull_request.number }}
+          path: out/*.iso
+          retention-days: 7
+          if-no-files-found: error
+
+  # ============================================================= FULL tier ===
+  # Gate: rc -> main. Steps filled in by #31. Runs NON-BLOCKING until #34
+  # promotes full-qemu-smoke to a required check.
+  full-qemu-smoke:
+    name: full-qemu-smoke
+    if: github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+      - uses: actions/checkout@v4
+      - name: Build ISO
+        run: make iso
+      - name: Install QEMU + OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 ovmf socat
+      # Boot smoke under both firmwares (TCG software emulation — no /dev/kvm on
+      # hosted runners). Captures serial + screendumps; fails only on a panic.
+      # The boot-to-ES-DE / install-matrix / OTA-sim hardening is the bake-in
+      # work (see scripts/test-qemu-ci.sh and #31 → promoted to required by #34).
+      - name: Headless boot smoke (BIOS)
+        run: scripts/test-qemu-ci.sh --bios --timeout=900
+      - name: Headless boot smoke (UEFI)
+        run: scripts/test-qemu-ci.sh --uefi --timeout=900
+      - name: Upload QEMU smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-smoke-pr${{ github.event.pull_request.number }}
+          path: out/ci-smoke
+          retention-days: 7
+          if-no-files-found: warn

@@ -1,0 +1,16 @@
+[Unit]
+Description=Reconcile RetroConsole managed home defaults
+# Self-healing boot trigger for retroconsole-seed: re-applies the managed-home
+# override policy on every boot, so a box that missed an "Update System" still
+# converges. Skip on live media — there is no persistent /home to seed.
+ConditionPathExists=!/etc/retroconsole-live
+After=local-fs.target
+Before=getty@tty1.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/retroconsole-seed
+
+[Install]
+WantedBy=multi-user.target
