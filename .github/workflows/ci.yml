@@ -99,8 +99,27 @@ jobs:
     if: github.base_ref == 'rc'
     runs-on: ubuntu-latest
     steps:
+      # mkarchiso + squashfs + AUR builds need tens of GB; reclaim the toolchains
+      # we don't use (same step as release.yml). ~30+ min total (AUR compiles
+      # fresh) — acceptable at the develop -> rc cadence; the whole reason rc exists.
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
       - uses: actions/checkout@v4
-      - run: 'echo "stub: medium-make-iso (#30 fills this in)"'
+      # Build-only: proves the image assembles. NO OTA publish, NO release —
+      # those are release.yml's (tag-triggered). The boot test is the full tier (#31).
+      - name: Build ISO
+        run: make iso
+      - name: Upload ISO artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retroconsole-iso-pr${{ github.event.pull_request.number }}
+          path: out/*.iso
+          retention-days: 7
+          if-no-files-found: error
 
   # ============================================================= FULL tier ===
   # Gate: rc -> main. Steps filled in by #31. Runs NON-BLOCKING until #34
