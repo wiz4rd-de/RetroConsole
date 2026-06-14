@@ -57,7 +57,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: 'echo "stub: fast-pkg-assert (#28 fills this in)"'
+      # Build retroconsole-config in an Arch container (makepkg is Arch-native),
+      # the same way every Arch step here runs — docker run, not a `container:`
+      # job (archlinux ships no node for actions/*). Read-only mount; the script
+      # builds into the container's /tmp and never writes the repo. DisableSandbox
+      # mirrors docker/Dockerfile (pacman's download sandbox; harmless natively).
+      - name: Build retroconsole-config + assert package contents
+        run: |
+          docker run --rm -v "$PWD":/build:ro -w /build archlinux:latest bash -c '
+            set -e
+            sed -i "s/^#\?DisableSandbox.*/DisableSandbox/" /etc/pacman.conf || true
+            grep -q "^DisableSandbox" /etc/pacman.conf || sed -i "/^\[options\]/a DisableSandbox" /etc/pacman.conf
+            pacman -Sy --noconfirm --needed base-devel >/dev/null
+            scripts/assert-config-pkg.sh
+          '
 
   fast-seed-reconcile:
     name: fast-seed-reconcile
