@@ -5,4 +5,6 @@ profile/airootfs/opt/retroconsole/repo/*
 # Generated at build time by scripts/build-aur-repo.sh from the airootfs
 # allowlist; the airootfs /home/retro tree is the single source of truth.
 packages/retroconsole-config/skel/
+
 IMPLEMENTATION_PLAN.md
+.DS_Store
