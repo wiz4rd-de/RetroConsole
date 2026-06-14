@@ -137,6 +137,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build ISO
         run: make iso
+      # make iso runs the build inside Docker as root, so out/ ends up
+      # root-owned; hand it back so the unprivileged boot-smoke step can create
+      # out/ci-smoke (mirrors release.yml's "Reclaim build outputs" step).
+      - name: Reclaim build outputs
+        run: sudo chown -R "$(id -u):$(id -g)" out
       - name: Install QEMU + OVMF
         run: |
           sudo apt-get update

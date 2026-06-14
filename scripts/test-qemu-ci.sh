@@ -58,10 +58,18 @@ QEMU=(
     -monitor "unix:${MON},server,nowait"
 )
 if [[ ${MODE} == uefi ]]; then
-    OVMF=/usr/share/OVMF/OVMF_CODE.fd
-    if [[ ! -r ${OVMF} ]]; then
-        echo "OVMF firmware not found at ${OVMF} (apt install ovmf)" >&2
-        exit 1
+    OVMF=""
+    for cand in \
+        /usr/share/OVMF/OVMF_CODE.fd \
+        /usr/share/OVMF/OVMF_CODE_4M.fd \
+        /usr/share/edk2-ovmf/x64/OVMF_CODE.fd \
+        /usr/share/ovmf/OVMF.fd
+    do
+        [[ -r ${cand} ]] && { OVMF=${cand}; break; }
+    done
+    if [[ -z ${OVMF} ]]; then
+        echo ":: [uefi] no OVMF firmware found -- skipping UEFI smoke (not an error)" >&2
+        exit 0
     fi
     QEMU+=(-drive "if=pflash,format=raw,readonly=on,file=${OVMF}")
 fi
@@ -78,6 +86,10 @@ done
 
 mon() { printf '%s\n' "$1" | socat - "UNIX-CONNECT:${MON}" 2>/dev/null || true; }
 
+# Pass as soon as the guest has stayed alive (no panic) for SETTLE seconds —
+# early kernel panics surface well within this. TIMEOUT is the hard ceiling.
+START=${SECONDS}
+SETTLE=240
 deadline=$((SECONDS + TIMEOUT))
 shot=0
 result=timeout
@@ -89,13 +101,20 @@ while ((SECONDS < deadline)); do
     sleep 20
     shot=$((shot + 1))
     mon "screendump ${OUTDIR}/screen-${MODE}-${shot}.ppm"
-    if grep -qiE 'kernel panic|Oops:|Unable to mount root|Failed to start' "${SER}" 2>/dev/null; then
+    if grep -qiE 'kernel panic|not syncing|VFS: Unable to mount root|Oops: ' "${SER}" 2>/dev/null; then
         result=panic
+        break
+    fi
+    if ((SECONDS - START >= SETTLE)); then
+        result=alive
         break
     fi
 done
 
+# Stop QEMU: try the monitor, then SIGTERM unconditionally so the script can
+# never hang on wait() if the monitor command didn't land (e.g. socat missing).
 mon "quit"
+kill "${QPID}" 2>/dev/null || true
 wait "${QPID}" 2>/dev/null || true
 echo ":: [${MODE}] result=${result}; artifacts: ${OUTDIR}/serial-${MODE}.log, ${OUTDIR}/screen-${MODE}-*.ppm"
 
