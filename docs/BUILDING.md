@@ -123,6 +123,22 @@ above, then a tag cut from `main` runs `release.yml` (below).
 
 ## Releasing
 
+A release is the `rc → main` promotion followed by a semver tag cut from
+`main`. Because `main` only accepts `rc`/`hotfix` commits and the tag inherits
+whatever `main` has at merge time, two things **must be in place before the
+`rc → main` PR merges** — neither can be added to `main` afterward:
+
+1. **Finalize the CHANGELOG on `rc` first.** Rename `[Unreleased]` to a dated
+   `[vX.Y.Z]` block, open a fresh empty `[Unreleased]`, and bump the compare
+   links. Commit it on `rc` so it rides into `main` with the release PR, then
+   back-sync `develop` to `rc` (e.g. cherry-pick the finalize) so the next
+   `develop → rc` doesn't conflict.
+2. **List `Closes #NN` for every issue in the release** in the `rc → main` PR
+   body. `main` is the default branch, so this is the **only** PR whose closing
+   keywords auto-close issues on merge — keywords in `feat → develop` PRs do
+   nothing (use `Refs #NN` there). The repo's pull-request template
+   (`.github/pull_request_template.md`) spells this out per branch.
+
 Releases are cut by CI (`.github/workflows/release.yml`), not by hand — no
 manual ISO uploads, no manual `publish-repo.sh`. Push a semver tag and the
 workflow does everything:
