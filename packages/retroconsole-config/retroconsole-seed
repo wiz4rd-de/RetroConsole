@@ -92,6 +92,103 @@ do
     fi
 done
 
+# --- Bundled ES-DE systems list: force EMPTY (#62/#63) -------------------- #
+# Root-cause fix for the create-system-directories ROM flood. ES-DE merges its
+# ~190-system bundled es_systems.xml UNDER custom_systems, which only overrides
+# by <name> — so ES-DE still "knows" ~190 systems and Utilities -> "Create/
+# update system directories" floods /home/retro/ROMs with ~190 dirs (most 0755,
+# not guest-writable). Overwriting the bundled file with an empty <systemList/>
+# leaves the curated custom_systems as everything ES-DE knows, so that menu can
+# only ever (re)create the curated dirs. The stub ships at a NEUTRAL path (a
+# pacman file conflict would abort pacstrap); we force it onto the real bundled
+# file every run, so it re-applies after a pacman -Syu reverts that file to
+# stock. (Fallback if ES-DE ever errors on an empty list: ship the curated set
+# in the stub instead and re-sync on ES-DE bumps — see #63.)
+STUB=/usr/share/retroconsole/es-de/es_systems-empty.xml
+ESDE_SYSTEMS=/usr/share/es-de/resources/systems/linux/es_systems.xml
+if [[ ! -e ${ESDE_SYSTEMS} ]]; then
+    # ES-DE moved the file (future version / non-standard layout): search for it.
+    ESDE_SYSTEMS=$(find /usr/share/es-de/resources/systems -type f -name es_systems.xml 2>/dev/null | head -n1)
+fi
+if [[ -f ${STUB} && -n ${ESDE_SYSTEMS} && -e ${ESDE_SYSTEMS} ]]; then
+    # install(1) -> root:root 0644, matching the package-owned bundled file.
+    if install -Dm644 "${STUB}" "${ESDE_SYSTEMS}"; then
+        log "bundled es_systems.xml emptied (custom_systems is sole source of truth)"
+    else
+        log "WARN: failed to empty bundled es_systems.xml at ${ESDE_SYSTEMS}"
+    fi
+else
+    log "bundled es_systems.xml not found — skipping empty-stub apply (non-fatal)"
+fi
+
+# --- Curated ROM dirs: keep guest-writable; sweep empty extras (#62/#64) --- #
+# A narrow, deliberate exception to "seed never touches ROMs": top-level dir
+# modes/existence ONLY, never user content. The curated set is exactly what
+# custom_systems defines — the same set ES-DE now knows (bundled list emptied
+# above) — so the create-system-directories menu can only ever (re)create these.
+ROMS_DIR="${HOME_DIR}/ROMs"
+SYSTEMS_XML="${SKEL}/ES-DE/custom_systems/es_systems.xml"
+if [[ -f ${SYSTEMS_XML} && -d ${ROMS_DIR} ]]; then
+    mapfile -t CURATED < <(grep -oP '%ROMPATH%/\K[^<]+' "${SYSTEMS_XML}" | sort -u)
+    declare -A CURATED_SET=()
+    for name in "${CURATED[@]}"; do CURATED_SET["${name}"]=1; done
+
+    # 1) Reconcile each curated dir to retro:retro 0777 — the directory itself,
+    #    never recursing into user ROMs. Covers dirs the menu recreates and dirs
+    #    for systems added via OTA. 'tools' is excluded: it holds root-owned
+    #    launchers (managed above) and is veto'd from the Samba share, so it must
+    #    NOT become guest-writable. Materializing a dir for a curated system with
+    #    no ROMs yet (e.g. 'genesis', when only 'megadrive' ships) is harmless:
+    #    empty, hidden in ES-DE until populated, and writable.
+    for name in "${CURATED[@]}"; do
+        [[ ${name} == tools ]] && continue
+        dir="${ROMS_DIR}/${name}"
+        # Never reconcile THROUGH a symlink: chown/chmod follow it (no -h), so a
+        # symlinked curated dir (e.g. ROMs/nes -> /mnt/usb) would make an
+        # arbitrary target world-writable + retro-owned on every boot. A symlink
+        # already resolves in ES-DE; leave its target's mode/owner to the user.
+        if [[ -L ${dir} ]]; then
+            log "curated ROM dir is a symlink — left untouched: ${name}"
+            continue
+        fi
+        if mkdir -p "${dir}" && chown retro:retro "${dir}" && chmod 0777 "${dir}"; then
+            log "curated ROM dir reconciled: ${name} (retro:retro 0777)"
+        else
+            log "WARN: failed to reconcile curated ROM dir ${name}"
+        fi
+    done
+
+    # 2) Sweep empty non-curated leftovers: a top-level ROMs/ subdir that is NOT
+    #    curated and holds nothing but ES-DE's generated systeminfo.txt (or is
+    #    empty). Any real content (a ROM, a subdir, any other file) -> keep, log,
+    #    skip. Deleting systeminfo.txt then rmdir (not rm -rf) is the safety net:
+    #    rmdir refuses if anything unexpected remains, so user ROMs can't be lost.
+    for dir in "${ROMS_DIR}"/*/; do
+        [[ -d ${dir} ]] || continue
+        base=$(basename "${dir}")
+        [[ -n ${CURATED_SET[${base}]:-} ]] && continue
+        # Never sweep THROUGH a symlink: rm/rmdir would act on the link's target,
+        # touching data outside ROMs/. (${dir%/} strips the glob's trailing slash,
+        # which would otherwise make -L follow the link instead of testing it.)
+        if [[ -L ${dir%/} ]]; then
+            log "non-curated ROM dir is a symlink — kept (not swept): ${base}"
+            continue
+        fi
+        if [[ -n $(find "${dir}" -mindepth 1 ! -name systeminfo.txt -print -quit 2>/dev/null) ]]; then
+            log "non-curated ROM dir kept (has content): ${base}"
+            continue
+        fi
+        rm -f "${dir}systeminfo.txt"
+        if rmdir "${dir}" 2>/dev/null; then
+            log "non-curated ROM dir swept (was empty): ${base}"
+        else
+            log "WARN: could not remove non-curated dir ${base} — keeping"
+        fi
+    done
+else
+    log "custom_systems/es_systems.xml or ROMs/ missing — skipping ROM dir reconcile"
+fi
+
 # --- Managed KEYS in retroarch.cfg: force to our value -------------------- #
 # RetroArch re-saves the whole config on exit, so a managed key must be forced
 # every run. es_settings.xml is user-reachable and is NEVER touched here.
