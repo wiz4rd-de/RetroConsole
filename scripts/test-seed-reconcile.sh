@@ -71,6 +71,10 @@ meta=$(stat -c '%U:%G %a' "${HOME_DIR}/ROMs/tools/Shell.sh")
 [[ ${meta} == "root:root 755" ]] && ok "Shell.sh is root:root 0755" || bad "Shell.sh meta='${meta}' (want 'root:root 755')"
 grep -qx 'joypad_autoconfig_dir = "/usr/share/libretro/autoconfig"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
     && ok "joypad_autoconfig_dir key forced" || bad "joypad_autoconfig_dir not forced"
+# M11/#18: the fabricated cfg above has no menu combo, so this exercises the
+# ensure_kv_force APPEND branch — the OTA path that gives an old box menu access.
+grep -qx 'input_menu_toggle_gamepad_combo = "9"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
+    && ok "input_menu_toggle_gamepad_combo key forced (Down+Select)" || bad "menu combo key not forced"
 grep -qx 'video_fullscreen = "true"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
     && ok "unmanaged retroarch key preserved" || bad "unmanaged retroarch key lost"
 
