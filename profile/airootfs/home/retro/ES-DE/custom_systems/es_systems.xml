@@ -13,17 +13,21 @@ under a game's Options -> Alternative emulators applies the shader. A per-game
 preset saved from the in-game menu (Down+Select -> Quick Menu -> Shaders) auto-
 loads ahead of this overlay and persists on the rcuser partition.
 
-IMPORTANT — override semantics: a custom <system> whose <name> matches a bundled
-ES-DE system REPLACES that bundled entry wholesale (child elements are NOT merged
-or inherited). So each console below replicates ES-DE's full bundled definition —
-path, extension globs, platform, theme, and the bundled DEFAULT command verbatim —
-captured from ES-DE 3.4.1's resources/systems/linux/es_systems.xml. Consequence:
-these systems intentionally expose only [bundled default, RetroArch — CRT]; the
-other bundled alt-emulators are dropped here by design (M11 locked decision #3).
-If ES-DE is bumped, re-sync the default <command>/<path>/<extension> lines against
-the new bundled file. Default cores (all shipped in packages.x86_64): nes=Mesen,
-snes=Snes9x, genesis/megadrive=Genesis Plus GX, gb/gbc=Gambatte, gba=mGBA,
-n64=Mupen64Plus-Next, psx=Beetle PSX (software).
+IMPORTANT — this file is the SOLE source of truth for the systems ES-DE knows
+(#62/#63). retroconsole-seed force-overwrites ES-DE's ~190-system bundled
+es_systems.xml with an empty <systemList/>, so ES-DE knows ONLY the systems
+defined here — nothing is merged or inherited from a bundled entry. Consequence:
+each <system> below must stay FULLY self-defined — path, extension globs,
+platform, theme, and the bundled DEFAULT command verbatim — captured from ES-DE
+3.4.1's resources/systems/linux/es_systems.xml (so the theme still supplies
+artwork by canonical <name>). Each console intentionally exposes only [bundled
+default, RetroArch — CRT]; the other bundled alt-emulators are dropped here by
+design (M11 locked decision #3). If ES-DE is bumped, re-sync the default
+<command>/<path>/<extension> lines against the new bundled file. Adding a system?
+See the "Adding a curated system" recipe in docs/BUILDING.md. Default cores (all
+shipped in packages.x86_64): nes=Mesen, snes=Snes9x, genesis/megadrive/
+mastersystem=Genesis Plus GX, gb/gbc=Gambatte, gba=mGBA, n64=Mupen64Plus-Next,
+psx=Beetle PSX (software).
 
 The "tools" system below is a RetroConsole-only custom system (no bundled
 counterpart) and must be preserved.
@@ -77,6 +81,16 @@ counterpart) and must be preserved.
         <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
         <platform>megadrive</platform>
         <theme>megadrive</theme>
+    </system>
+    <system>
+        <name>mastersystem</name>
+        <fullname>Sega Master System</fullname>
+        <path>%ROMPATH%/mastersystem</path>
+        <extension>.68k .68K .bin .BIN .bms .BMS .chd .CHD .col .COL .cue .CUE .gen .GEN .gg .GG .iso .ISO .m3u .M3U .md .MD .mdx .MDX .rom .ROM .sg .SG .sgd .SGD .smd .SMD .sms .SMS .7z .7Z .zip .ZIP</extension>
+        <command label="Genesis Plus GX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>mastersystem</platform>
+        <theme>mastersystem</theme>
     </system>
     <system>
         <name>gb</name>

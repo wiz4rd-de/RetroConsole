@@ -29,6 +29,7 @@ file_permissions=(
   ["/home/retro/ROMs/nes"]="1000:1000:0777"
   ["/home/retro/ROMs/snes"]="1000:1000:0777"
   ["/home/retro/ROMs/megadrive"]="1000:1000:0777"
+  ["/home/retro/ROMs/mastersystem"]="1000:1000:0777"
   ["/home/retro/ROMs/gb"]="1000:1000:0777"
   ["/home/retro/ROMs/gbc"]="1000:1000:0777"
   ["/home/retro/ROMs/gba"]="1000:1000:0777"
