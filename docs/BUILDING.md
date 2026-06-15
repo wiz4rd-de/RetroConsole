@@ -140,13 +140,22 @@ whatever `main` has at merge time, two things **must be in place before the
    (`.github/pull_request_template.md`) spells this out per branch.
 
 Releases are cut by CI (`.github/workflows/release.yml`), not by hand — no
-manual ISO uploads, no manual `publish-repo.sh`. Push a semver tag and the
-workflow does everything:
+manual ISO uploads, no manual `publish-repo.sh`. Pushing a semver tag is what
+fires it, so cut the tag **only after the `rc → main` PR has merged, and put it
+on the resulting `main` commit — never on `rc` or any pre-merge commit:**
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git switch main && git pull   # land on the rc → main merge commit
+git tag v0.1.0                # tag main's HEAD, not rc's
+git push origin v0.1.0        # this push triggers release.yml
 ```
+
+Tagging `rc` (or tagging before the merge lands) strands the release on a side
+branch: the tag won't sit on `main`'s first-parent history, `git log
+vX.Y.Z..main` reports the merge as if it came *after* the release, and the
+GitHub Release links a commit that isn't the one on `main`. That is exactly
+what bit **v0.3.0** — it was tagged on the `develop → rc` merge, so PR #70 had
+to reconcile the two lines afterward.
 
 On a native amd64 runner it builds the ISO (same Docker image and scripts as
 `make iso`), then:
