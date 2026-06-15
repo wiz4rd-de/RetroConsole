@@ -10,6 +10,23 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-15
+
+Shader delivery fix (M11 follow-up): the glsl/slang packs now reach existing
+boxes over OTA, so *Quick Menu → Shaders* is populated and the **RetroArch — CRT**
+emulator actually applies its shader — both without an Online Updater download.
+
+### Fixed
+- Shaders now actually reach existing boxes over OTA. The glsl/slang packs were
+  listed only in the ISO build manifest, so an *Update System* (`pacman -Syu`)
+  never installed them — leaving *Quick Menu → Shaders* empty and the
+  **RetroArch — CRT** emulator with no visible effect (its overlay pointed at a
+  shader file that wasn't on disk). `retroconsole-config` now depends on both
+  packs, so OTA pulls them in. (#19, #20)
+- *Quick Menu → Shaders → Load Shader Preset* now opens at the bundled pack
+  (`video_shader_dir`), so shaders are browsable without first running the Online
+  Updater. Forced onto existing boxes by the seed. (#19)
+
 ## [0.3.0] - 2026-06-15
 
 In-game RetroArch menu + selectable shaders (M11) and ES-DE system curation
@@ -122,7 +139,8 @@ First release — a self-installing, controller-first retro console (M0–M8).
 - Appliance configuration packaged so later fixes ship over OTA, and a tag-driven
   release pipeline that builds the ISO and publishes the OTA channel.
 
-[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.0...develop
+[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.1...develop
+[0.3.1]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.0...v0.2.1

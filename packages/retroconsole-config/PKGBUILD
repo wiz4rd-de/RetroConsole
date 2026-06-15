@@ -10,7 +10,7 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=7
+pkgrel=8
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
@@ -20,7 +20,18 @@ license=('MIT')
 # (retroconsole-launch, #14). wireplumber: retroconsole-launch uses wpctl to pin
 # the default sink to full volume (#13). Declared here so existing boxes get the
 # binaries on the next "Update System".
-depends=('openssh' 'wlr-randr' 'wireplumber')
+#
+# libretro-shaders-glsl/-slang (M11/#19, #20): the shader packs were originally
+# listed ONLY in packages.x86_64, which seeds the ISO build (pacstrap) and nothing
+# more. A `pacman -Syu` OTA upgrades installed packages and pulls new DEPENDENCIES,
+# but never installs a brand-new package nothing depends on — so OTA-updated boxes
+# got the "RetroArch — CRT" alt-emulator and crt.cfg WITHOUT the shader files it
+# points at: the CRT variant silently loaded no shader and Quick Menu -> Shaders
+# was empty until the user ran the online updater. Depending on them here forces
+# OTA to install the packs, matching a fresh flash. glsl is the active set the gl
+# driver + crt.cfg consume; slang ships for enthusiasts who switch to glcore.
+depends=('openssh' 'wlr-randr' 'wireplumber'
+         'libretro-shaders-glsl' 'libretro-shaders-slang')
 # Scriptlet enables retroconsole-seed.service on install/upgrade (A4/#11).
 install=retroconsole-config.install
 source=('retroconsole-session'

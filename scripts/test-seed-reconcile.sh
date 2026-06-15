@@ -99,6 +99,10 @@ grep -qx 'joypad_autoconfig_dir = "/usr/share/libretro/autoconfig"' "${HOME_DIR}
 # ensure_kv_force APPEND branch — the OTA path that gives an old box menu access.
 grep -qx 'input_menu_toggle_gamepad_combo = "9"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
     && ok "input_menu_toggle_gamepad_combo key forced (Down+Select)" || bad "menu combo key not forced"
+# #19/#20: shader browser pointed at the bundled pack so Quick Menu -> Shaders is
+# populated on OTA boxes without an online-updater download.
+grep -qx 'video_shader_dir = "/usr/share/libretro/shaders/"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
+    && ok "video_shader_dir key forced (bundled shader pack)" || bad "video_shader_dir not forced"
 grep -qx 'video_fullscreen = "true"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
     && ok "unmanaged retroarch key preserved" || bad "unmanaged retroarch key lost"
 
