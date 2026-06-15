@@ -60,10 +60,20 @@ libretro-snes9x
 retroarch
 retroarch-assets-ozone
 retroarch-assets-xmb
+# Shader presets so Quick Menu -> Shaders is non-empty (M11/#19). A video driver
+# only loads ONE format: our default gl driver reads glsl (.glslp), so the glsl
+# pack is the active set the ES-DE "RetroArch — CRT" variant uses; slang (.slangp)
+# ships too for enthusiasts who switch the driver to glcore. slang is in Arch
+# extra; glsl is gone from the repos and comes from the local [retroconsole] repo
+# below (packages/libretro-shaders-glsl, pinned upstream snapshot).
+libretro-shaders-slang
 
 # From the local [retroconsole] repo (AUR-built at ISO build time)
 emulationstation-de
 game-devices-udev
+# glsl shader presets (data-only, pinned commit) — installs the .glslp/.glsl tree
+# to /usr/share/libretro/shaders/shaders_glsl/ that crt.cfg's CRT preset lives in.
+libretro-shaders-glsl
 retroarch-autoconfig-udev-git
 # Our own appliance config (packages/retroconsole-config) — system-level
 # files live here, not in airootfs, so fixes reach installed systems via
