@@ -10,7 +10,7 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=6
+pkgrel=7
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
@@ -33,8 +33,9 @@ source=('retroconsole-session'
         '50-retroconsole-prefer-hdmi.conf'
         'vconsole.conf'
         'retrobit-genesis-saturn-8button.cfg'
-        'crt.cfg')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+        'crt.cfg'
+        'es_systems-empty.xml')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
     install -Dm755 retroconsole-session "${pkgdir}/usr/local/bin/retroconsole-session"
@@ -59,6 +60,16 @@ package() {
     # `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg`. System path (not
     # /home) so it is OTA-replaceable and never reconciled into the user's cfg.
     install -Dm644 crt.cfg "${pkgdir}/usr/share/retroconsole/retroarch/crt.cfg"
+
+    # Empty bundled-systems stub (#62/#63). retroconsole-seed force-overwrites
+    # ES-DE's ~190-system bundled es_systems.xml with this empty <systemList/>,
+    # making custom_systems/es_systems.xml the SOLE source of truth — the root-
+    # cause fix for the "Create/update system directories" ROM flood. Packaged to
+    # a NEUTRAL path (NOT the emulationstation-de-owned bundled file) so pacstrap
+    # never hits a file conflict; the seed copies it onto the real file at runtime
+    # and re-applies it after every "Update System" reverts the bundled file to
+    # stock. Same reasoning as the autoconfig profile and crt.cfg above.
+    install -Dm644 es_systems-empty.xml "${pkgdir}/usr/share/retroconsole/es-de/es_systems-empty.xml"
 
     # Managed-home seed payload, packaged to a NEUTRAL path (never /home — that
     # would abort pacstrap on a file conflict, the M3 dpad-hook lesson). The

@@ -23,6 +23,11 @@ finalized into a version block when the release tag is cut.
   preset saved from the in-game menu overrides it per game and persists across
   updates. (#20)
 - Hardware docs for the menu combo and shader selection. (#21)
+- **Sega Master System** added to the curated systems — default emulator Genesis
+  Plus GX plus the **RetroArch — CRT** variant. Reaches existing boxes (folder +
+  system) over OTA on the next *Update System*. (#65)
+- *Adding a curated system* recipe and the empty-bundled-list design note in
+  `docs/BUILDING.md`. (#66)
 
 ### Changed
 - Systems launched through ES-DE (NES, SNES, Genesis, Mega Drive, GB, GBC, GBA,
@@ -30,6 +35,16 @@ finalized into a version block when the release tag is cut.
   only; other bundled libretro cores are no longer selectable from the ES-DE
   alternative-emulators menu for those systems. The default launch is unchanged,
   and per-game tweaks remain available from the in-game RetroArch menu. (#20)
+
+### Fixed
+- *Utilities → Create/update system directories* no longer floods the ROMs share
+  with ~190 folders. ES-DE's bundled ~190-system list is force-emptied at runtime
+  so `custom_systems` is the sole source of truth — ES-DE knows only the curated
+  set, so that menu can only ever (re)create curated dirs. (#62, #63)
+- ROM folders stay guest-writable: `retroconsole-seed` reconciles each curated
+  dir to 0777 (directory only, never touching ROMs) and sweeps empty non-curated
+  leftovers — tidying boxes already flooded before the fix — while preserving any
+  folder that holds a real ROM. Reaches existing boxes over OTA. (#62, #64)
 
 ## [0.2.2] - 2026-06-15
 
