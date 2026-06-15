@@ -34,6 +34,22 @@
 - **Console access**: ES-DE runs on tty1. Switch to tty2 (Ctrl+Alt+F2) and log
   in as `retro` (no password) for a shell.
 
+## In-game menu & shaders
+
+- **Open the RetroArch menu**: while a game is running, hold **Down + Select** on
+  the pad to open the in-game RetroArch menu (*Quick Menu*); **Start + Select**
+  still quits back to ES-DE. A keyboard `F1` also opens the menu if one is
+  attached. Use the menu for save states, fast-forward, controls, and shaders.
+- **Shaders (CRT look)**: in ES-DE, highlight a game and open its *Options →
+  Alternative emulators*, then pick **RetroArch — CRT** to launch with a CRT
+  scanline shader applied. To tweak or turn it off live, open the RetroArch menu
+  (Down + Select) and go to *Quick Menu → Shaders*. A preset you save there is
+  remembered **per game**, overrides the ES-DE CRT default, and survives updates.
+  The default graphics driver is `gl`, which uses the **glsl** shaders (the CRT
+  variant ships the lightweight `zfast-crt` preset so it stays smooth on weaker
+  GPUs); a **slang** shader pack is also installed for anyone who switches the
+  driver to `glcore` from the menu.
+
 ## BIOS files
 
 PSX needs user-supplied BIOS images; see
