@@ -1,0 +1,50 @@
+# RetroConsole release-source guard — enforces git-flow topology at the main edge.
+#
+# The branch flow is feat/* -> develop -> rc -> main (see docs/BUILDING.md).
+# GitHub branch protection / rulesets can require a PR and required checks, but
+# they CANNOT constrain a PR's HEAD branch — there is no native "merge into main
+# only from rc". This job is that missing rule: a PR into `main` passes only if
+# it comes from `rc` (normal releases) or `hotfix/*` (emergency fixes), so the
+# release spine stays linear and nothing skips the develop -> rc gate.
+#
+# Stable job name — `release-source-guard` is marked a REQUIRED status check on
+# `main` (classic branch protection, alongside full-qemu-smoke once #34 promotes
+# it). DO NOT rename without updating the protection rule. Same load-bearing-name
+# contract as ci.yml's tier jobs.
+#
+# Cheap and deterministic (seconds, no build), so it is safe to require up front —
+# unlike the slow QEMU tier it has no flakiness to bake out.
+name: Release Guard
+
+on:
+  pull_request:
+    # Only PRs whose BASE is main. `edited` catches someone retargeting an
+    # existing PR's base to main after the fact.
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-source-guard:
+    name: release-source-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert PR head is rc or hotfix/*
+        env:
+          # github.head_ref is the unqualified source branch on pull_request
+          # events (empty on push — but this workflow only runs on PRs).
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "PR into main from: '${HEAD_REF}'"
+          if [[ "${HEAD_REF}" == "rc" || "${HEAD_REF}" == hotfix/* ]]; then
+            echo "OK: '${HEAD_REF}' -> main is an allowed release source."
+            exit 0
+          fi
+          echo "::error::PRs into main must come from 'rc' or 'hotfix/*' (got '${HEAD_REF}'). Promote changes via develop -> rc -> main." >&2
+          exit 1

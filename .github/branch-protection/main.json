@@ -1,0 +1,19 @@
+{
+  "_comment": "Desired classic branch-protection state for `main`. Source of truth for the rc->main release edge; apply with: gh api --method PUT repos/:owner/:repo/branches/main/protection --input .github/branch-protection/main.json  (strip _comment keys first, see scripts/apply-main-protection.sh). Matches the classic-protection style already used on develop/rc. required_linear_history is FALSE on purpose: the flow merges with --no-ff merge commits (git-flow), which linear history would forbid.",
+  "required_status_checks": {
+    "strict": false,
+    "contexts": ["release-source-guard"]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0
+  },
+  "restrictions": null,
+  "required_linear_history": false,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "required_conversation_resolution": false,
+  "block_creations": false
+}
