@@ -123,14 +123,39 @@ above, then a tag cut from `main` runs `release.yml` (below).
 
 ## Releasing
 
+A release is the `rc → main` promotion followed by a semver tag cut from
+`main`. Because `main` only accepts `rc`/`hotfix` commits and the tag inherits
+whatever `main` has at merge time, two things **must be in place before the
+`rc → main` PR merges** — neither can be added to `main` afterward:
+
+1. **Finalize the CHANGELOG on `rc` first.** Rename `[Unreleased]` to a dated
+   `[vX.Y.Z]` block, open a fresh empty `[Unreleased]`, and bump the compare
+   links. Commit it on `rc` so it rides into `main` with the release PR, then
+   back-sync `develop` to `rc` (e.g. cherry-pick the finalize) so the next
+   `develop → rc` doesn't conflict.
+2. **List `Closes #NN` for every issue in the release** in the `rc → main` PR
+   body. `main` is the default branch, so this is the **only** PR whose closing
+   keywords auto-close issues on merge — keywords in `feat → develop` PRs do
+   nothing (use `Refs #NN` there). The repo's pull-request template
+   (`.github/pull_request_template.md`) spells this out per branch.
+
 Releases are cut by CI (`.github/workflows/release.yml`), not by hand — no
-manual ISO uploads, no manual `publish-repo.sh`. Push a semver tag and the
-workflow does everything:
+manual ISO uploads, no manual `publish-repo.sh`. Pushing a semver tag is what
+fires it, so cut the tag **only after the `rc → main` PR has merged, and put it
+on the resulting `main` commit — never on `rc` or any pre-merge commit:**
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git switch main && git pull   # land on the rc → main merge commit
+git tag v0.1.0                # tag main's HEAD, not rc's
+git push origin v0.1.0        # this push triggers release.yml
 ```
+
+Tagging `rc` (or tagging before the merge lands) strands the release on a side
+branch: the tag won't sit on `main`'s first-parent history, `git log
+vX.Y.Z..main` reports the merge as if it came *after* the release, and the
+GitHub Release links a commit that isn't the one on `main`. That is exactly
+what bit **v0.3.0** — it was tagged on the `develop → rc` merge, so PR #70 had
+to reconcile the two lines afterward.
 
 On a native amd64 runner it builds the ISO (same Docker image and scripts as
 `make iso`), then:
