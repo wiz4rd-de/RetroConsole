@@ -64,6 +64,26 @@ for pkg in "${AUR_PACKAGES[@]}"; do
     refresh_repo
 done
 
+# Local data-only package: the libretro glsl shader presets (M11/#19). Not in
+# the Arch repos and no clean AUR package exists, so we vendor the upstream tree
+# at a pinned commit via packages/libretro-shaders-glsl/PKGBUILD. Data-only but a
+# ~26 MB download + ~1700-file install, so cache it like the AUR packages above
+# rather than rebuilding every run (FORCE_AUR=1 forces a rebuild after a bump).
+if [[ -z ${FORCE_AUR:-} ]] && compgen -G "${REPO_DIR}/libretro-shaders-glsl-[0-9]*.pkg.tar.zst" >/dev/null; then
+    echo ":: libretro-shaders-glsl: already built, skipping (FORCE_AUR=1 to rebuild)"
+else
+    echo ":: Building libretro-shaders-glsl (local PKGBUILD)..."
+    rm -rf "${BUILD_DIR}/libretro-shaders-glsl"
+    cp -r /build/packages/libretro-shaders-glsl "${BUILD_DIR}/libretro-shaders-glsl"
+    chown -R builder "${BUILD_DIR}/libretro-shaders-glsl"
+    # No deps and no compilation; makepkg just fetches + checksums the pinned
+    # tarball and stages the tree. --skippgpcheck parity with the AUR builds.
+    (cd "${BUILD_DIR}/libretro-shaders-glsl" && sudo -u builder makepkg --noconfirm --force --skippgpcheck)
+    rm -f "${REPO_DIR}"/libretro-shaders-glsl-*.pkg.tar.zst
+    cp "${BUILD_DIR}/libretro-shaders-glsl"/libretro-shaders-glsl-*.pkg.tar.zst "${REPO_DIR}/"
+    refresh_repo
+fi
+
 # Our own config package: always rebuilt (cheap — no compilation) so file
 # edits and pkgver bumps are picked up by every build.
 echo ":: Building retroconsole-config..."

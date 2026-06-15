@@ -9,10 +9,11 @@
 #   base main    -> FULL    ~1h+           make iso + QEMU smoke (NON-BLOCKING until #34)
 #
 # Stable job names — branch protection references these by string, so DO NOT
-# rename without updating the protection rules (#32/#34):
+# rename without updating the protection rules (#32/#34/#56):
 #   fast-shellcheck, fast-pkg-assert, fast-seed-reconcile  -> lean gate (#32), required on develop
-#   medium-make-iso                                        -> lean gate (#32), required on rc + main
-#   full-qemu-smoke                                        -> tighten (#34), required on main LATER
+#   medium-make-iso                                        -> lean gate (#32), required on rc (skips on main: if base_ref==rc)
+#   release-source-guard (release-guard.yml, #56)          -> required on main — rc/hotfix-only source
+#   full-qemu-smoke                                        -> non-blocking on main; promoted to required LATER (#34)
 #
 # Bootstrap note: this workflow and its tier jobs were built ungated and merged
 # into develop via the pre-gate process. Same-repo PRs run ci.yml from the PR
