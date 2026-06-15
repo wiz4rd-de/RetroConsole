@@ -32,8 +32,9 @@ source=('retroconsole-session'
         '50-retroconsole-network.rules'
         '50-retroconsole-prefer-hdmi.conf'
         'vconsole.conf'
-        'retrobit-genesis-saturn-8button.cfg')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+        'retrobit-genesis-saturn-8button.cfg'
+        'crt.cfg')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
     install -Dm755 retroconsole-session "${pkgdir}/usr/local/bin/retroconsole-session"
@@ -52,6 +53,12 @@ package() {
     # device name), not filename. OTA-delivered like every other managed file.
     install -Dm644 retrobit-genesis-saturn-8button.cfg \
         "${pkgdir}/usr/share/libretro/autoconfig/udev/retrobit-genesis-saturn-8button.cfg"
+
+    # CRT shader overlay (M11/#20), read-only so RetroArch never rewrites it. The
+    # ES-DE "RetroArch — CRT" alternative emulator launches with
+    # `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg`. System path (not
+    # /home) so it is OTA-replaceable and never reconciled into the user's cfg.
+    install -Dm644 crt.cfg "${pkgdir}/usr/share/retroconsole/retroarch/crt.cfg"
 
     # Managed-home seed payload, packaged to a NEUTRAL path (never /home — that
     # would abort pacstrap on a file conflict, the M3 dpad-hook lesson). The

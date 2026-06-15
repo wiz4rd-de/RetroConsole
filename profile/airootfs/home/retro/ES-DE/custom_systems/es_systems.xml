@@ -1,4 +1,33 @@
 <?xml version="1.0"?>
+<!--
+RetroConsole custom systems (M11/#20).
+
+ES-DE has no native shader picker that drives RetroArch, so "shaders from ES-DE"
+is delivered as a per-system ALTERNATIVE EMULATOR: "RetroArch — CRT" launches the
+same core, adding RetroArch's appendconfig flag set to
+/usr/share/retroconsole/retroarch/crt.cfg, the
+read-only overlay that enables the glsl CRT preset (shipped by retroconsole-config
++ libretro-shaders-glsl). The first <command> of each system is the DEFAULT, so a
+normal launch is byte-for-byte ES-DE's bundled behavior; picking "RetroArch — CRT"
+under a game's Options -> Alternative emulators applies the shader. A per-game
+preset saved from the in-game menu (Down+Select -> Quick Menu -> Shaders) auto-
+loads ahead of this overlay and persists on the rcuser partition.
+
+IMPORTANT — override semantics: a custom <system> whose <name> matches a bundled
+ES-DE system REPLACES that bundled entry wholesale (child elements are NOT merged
+or inherited). So each console below replicates ES-DE's full bundled definition —
+path, extension globs, platform, theme, and the bundled DEFAULT command verbatim —
+captured from ES-DE 3.4.1's resources/systems/linux/es_systems.xml. Consequence:
+these systems intentionally expose only [bundled default, RetroArch — CRT]; the
+other bundled alt-emulators are dropped here by design (M11 locked decision #3).
+If ES-DE is bumped, re-sync the default <command>/<path>/<extension> lines against
+the new bundled file. Default cores (all shipped in packages.x86_64): nes=Mesen,
+snes=Snes9x, genesis/megadrive=Genesis Plus GX, gb/gbc=Gambatte, gba=mGBA,
+n64=Mupen64Plus-Next, psx=Beetle PSX (software).
+
+The "tools" system below is a RetroConsole-only custom system (no bundled
+counterpart) and must be preserved.
+-->
 <systemList>
     <system>
         <name>tools</name>
@@ -8,5 +37,95 @@
         <command>%EMULATOR_OS-SHELL% %ROM%</command>
         <platform>desktop</platform>
         <theme>desktop</theme>
+    </system>
+    <system>
+        <name>nes</name>
+        <fullname>Nintendo Entertainment System</fullname>
+        <path>%ROMPATH%/nes</path>
+        <extension>.3dsen .3DSEN .fds .FDS .nes .NES .unf .UNF .unif .UNIF .7z .7Z .zip .ZIP</extension>
+        <command label="Mesen">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mesen_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mesen_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>nes</platform>
+        <theme>nes</theme>
+    </system>
+    <system>
+        <name>snes</name>
+        <fullname>Nintendo SNES (Super Nintendo)</fullname>
+        <path>%ROMPATH%/snes</path>
+        <extension>.bin .BIN .bml .BML .bs .BS .bsx .BSX .dx2 .DX2 .fig .FIG .gd3 .GD3 .gd7 .GD7 .mgd .MGD .sfc .SFC .smc .SMC .st .ST .swc .SWC .7z .7Z .zip .ZIP</extension>
+        <command label="Snes9x - Current">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/snes9x_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/snes9x_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>snes</platform>
+        <theme>snes</theme>
+    </system>
+    <system>
+        <name>genesis</name>
+        <fullname>Sega Genesis</fullname>
+        <path>%ROMPATH%/genesis</path>
+        <extension>.32x .32X .68k .68K .bin .BIN .bms .BMS .chd .CHD .cue .CUE .gen .GEN .gg .GG .iso .ISO .m3u .M3U .md .MD .mdx .MDX .sg .SG .sgd .SGD .smd .SMD .sms .SMS .7z .7Z .zip .ZIP</extension>
+        <command label="Genesis Plus GX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>genesis</platform>
+        <theme>genesis</theme>
+    </system>
+    <system>
+        <name>megadrive</name>
+        <fullname>Sega Mega Drive</fullname>
+        <path>%ROMPATH%/megadrive</path>
+        <extension>.32x .32X .68k .68K .bin .BIN .bms .BMS .chd .CHD .cue .CUE .gen .GEN .gg .GG .iso .ISO .m3u .M3U .md .MD .mdx .MDX .sg .SG .sgd .SGD .smd .SMD .sms .SMS .7z .7Z .zip .ZIP</extension>
+        <command label="Genesis Plus GX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>megadrive</platform>
+        <theme>megadrive</theme>
+    </system>
+    <system>
+        <name>gb</name>
+        <fullname>Nintendo Game Boy</fullname>
+        <path>%ROMPATH%/gb</path>
+        <extension>.bs .BS .cgb .CGB .dmg .DMG .gb .GB .gbc .GBC .gbx .GBX .sgb .SGB .sfc .SFC .smc .SMC .7z .7Z .zip .ZIP</extension>
+        <command label="Gambatte">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>gb</platform>
+        <theme>gb</theme>
+    </system>
+    <system>
+        <name>gbc</name>
+        <fullname>Nintendo Game Boy Color</fullname>
+        <path>%ROMPATH%/gbc</path>
+        <extension>.bs .BS .cgb .CGB .dmg .DMG .gb .GB .gbc .GBC .gbx .GBX .sgb .SGB .sfc .SFC .smc .SMC .7z .7Z .zip .ZIP</extension>
+        <command label="Gambatte">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>gbc</platform>
+        <theme>gbc</theme>
+    </system>
+    <system>
+        <name>gba</name>
+        <fullname>Nintendo Game Boy Advance</fullname>
+        <path>%ROMPATH%/gba</path>
+        <extension>.agb .AGB .bin .BIN .cgb .CGB .dmg .DMG .gb .GB .gba .GBA .gbc .GBC .gbx .GBX .sgb .SGB .7z .7Z .zip .ZIP</extension>
+        <command label="mGBA">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mgba_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mgba_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>gba</platform>
+        <theme>gba</theme>
+    </system>
+    <system>
+        <name>n64</name>
+        <fullname>Nintendo 64</fullname>
+        <path>%ROMPATH%/n64</path>
+        <extension>.AppImage .bin .BIN .d64 .D64 .desktop .n64 .N64 .ndd .NDD .sh .u1 .U1 .v64 .V64 .z64 .Z64 .7z .7Z .zip .ZIP</extension>
+        <command label="Mupen64Plus-Next">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mupen64plus_next_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mupen64plus_next_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>n64</platform>
+        <theme>n64</theme>
+    </system>
+    <system>
+        <name>psx</name>
+        <fullname>Sony PlayStation</fullname>
+        <path>%ROMPATH%/psx</path>
+        <extension>.bin .BIN .cbn .CBN .ccd .CCD .chd .CHD .cue .CUE .ecm .ECM .exe .EXE .img .IMG .iso .ISO .m3u .M3U .mdf .MDF .mds .MDS .minipsf .MINIPSF .pbp .PBP .psexe .PSEXE .psf .PSF .toc .TOC .z .Z .znx .ZNX .7z .7Z .zip .ZIP</extension>
+        <command label="Beetle PSX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mednafen_psx_libretro.so %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mednafen_psx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <platform>psx</platform>
+        <theme>psx</theme>
     </system>
 </systemList>
