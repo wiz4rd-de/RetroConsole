@@ -10,6 +10,17 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+### Fixed
+- Shaders now actually reach existing boxes over OTA. The glsl/slang packs were
+  listed only in the ISO build manifest, so an *Update System* (`pacman -Syu`)
+  never installed them — leaving *Quick Menu → Shaders* empty and the
+  **RetroArch — CRT** emulator with no visible effect (its overlay pointed at a
+  shader file that wasn't on disk). `retroconsole-config` now depends on both
+  packs, so OTA pulls them in. (#19, #20)
+- *Quick Menu → Shaders → Load Shader Preset* now opens at the bundled pack
+  (`video_shader_dir`), so shaders are browsable without first running the Online
+  Updater. Forced onto existing boxes by the seed. (#19)
+
 ## [0.3.0] - 2026-06-15
 
 In-game RetroArch menu + selectable shaders (M11) and ES-DE system curation

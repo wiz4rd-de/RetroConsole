@@ -203,6 +203,12 @@ if [[ -f ${RA_CFG} ]]; then
     # RetroArch's gl/glsl default and must not revert an enthusiast who switched
     # to glcore for slang shaders (M11 locked decision #2).
     ensure_kv_force "${RA_CFG}" "input_menu_toggle_gamepad_combo" "9"
+    # Point the in-game shader browser at the bundled pack (M11/#19/#20). Without
+    # this an OTA box keeps RetroArch's default ~/.config/retroarch/shaders, which
+    # is empty, so Quick Menu -> Shaders looks broken until the player runs the
+    # online updater. /usr/share/libretro/shaders/ holds shaders_glsl/ (the active
+    # set for our gl driver) and shaders_slang/ (for glcore enthusiasts).
+    ensure_kv_force "${RA_CFG}" "video_shader_dir" "/usr/share/libretro/shaders/"
     # video_refresh_rate is intentionally NOT managed here: it is display-
     # dependent, so the in-session launcher (retroconsole-launch) sets it per
     # boot from the refresh cage is actually driving, falling back to the
