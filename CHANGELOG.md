@@ -10,6 +10,11 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-15
+
+In-game RetroArch menu + selectable shaders (M11) and ES-DE system curation
+(the create-system-directories ROM-flood fix + Sega Master System).
+
 ### Added
 - In-game RetroArch menu from the controller: hold **Down + Select** while a game
   is running to open it (Start + Select still quits to ES-DE; keyboard `F1` still
@@ -117,7 +122,8 @@ First release — a self-installing, controller-first retro console (M0–M8).
 - Appliance configuration packaged so later fixes ship over OTA, and a tag-driven
   release pipeline that builds the ISO and publishes the OTA channel.
 
-[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.2...develop
+[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.0...develop
+[0.3.0]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.1.0...v0.2.0
