@@ -98,7 +98,10 @@ done
 RA_CFG="${HOME_DIR}/.config/retroarch/retroarch.cfg"
 if [[ -f ${RA_CFG} ]]; then
     ensure_kv_force "${RA_CFG}" "joypad_autoconfig_dir" "/usr/share/libretro/autoconfig"
-    # audio keys (audio_driver, audio_latency) added by #14 after T630 diagnosis
+    # video_refresh_rate is intentionally NOT managed here: it is display-
+    # dependent, so the in-session launcher (retroconsole-launch) sets it per
+    # boot from the refresh cage is actually driving, falling back to the
+    # airootfs default (50Hz) when it can't be read (#13/#14).
     chown retro:retro "${RA_CFG}" || log "WARN: failed to chown ${RA_CFG}"
     log "retroarch.cfg keys reconciled"
 else
