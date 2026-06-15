@@ -10,7 +10,7 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=5
+pkgrel=6
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
@@ -31,8 +31,9 @@ source=('retroconsole-session'
         'sudoers-retroconsole'
         '50-retroconsole-network.rules'
         '50-retroconsole-prefer-hdmi.conf'
-        'vconsole.conf')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+        'vconsole.conf'
+        'retrobit-genesis-saturn-8button.cfg')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
     install -Dm755 retroconsole-session "${pkgdir}/usr/local/bin/retroconsole-session"
@@ -44,6 +45,13 @@ package() {
     install -Dm644 50-retroconsole-network.rules "${pkgdir}/etc/polkit-1/rules.d/50-retroconsole-network.rules"
     install -Dm644 50-retroconsole-prefer-hdmi.conf "${pkgdir}/etc/wireplumber/wireplumber.conf.d/50-retroconsole-prefer-hdmi.conf"
     install -Dm644 vconsole.conf "${pkgdir}/etc/vconsole.conf"
+
+    # RetroArch autoconfig profile for the Sega-lookalike pad (#46/#47). New
+    # filename (not one retroarch-autoconfig-udev-git ships) so there is no
+    # pacman file conflict; RetroArch matches by file CONTENT (VID/PID + exact
+    # device name), not filename. OTA-delivered like every other managed file.
+    install -Dm644 retrobit-genesis-saturn-8button.cfg \
+        "${pkgdir}/usr/share/libretro/autoconfig/udev/retrobit-genesis-saturn-8button.cfg"
 
     # Managed-home seed payload, packaged to a NEUTRAL path (never /home — that
     # would abort pacstrap on a file conflict, the M3 dpad-hook lesson). The
