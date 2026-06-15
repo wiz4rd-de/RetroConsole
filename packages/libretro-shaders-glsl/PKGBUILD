@@ -1,0 +1,50 @@
+# RetroConsole-local, data-only repackage of the libretro glsl-shaders preset
+# collection (M11/#19).
+#
+# Why this lives in-tree instead of being pulled from a repo: RetroArch's gl
+# driver — our shipped default — only loads GLSL (.glslp) presets, but the glsl
+# pack is no longer in the Arch repos and there is no clean AUR package for it
+# (libretro-shaders-slang IS in extra and is added straight to packages.x86_64;
+# only glsl needs vendoring). So we snapshot the upstream tree at a PINNED commit
+# and install it verbatim. There is NO compilation: RetroArch interprets the
+# .glslp/.glsl text files at runtime.
+#
+# Install path is /usr/share/libretro/shaders/shaders_glsl/ — RetroArch's default
+# glsl shader location and the historical libretro-shaders-glsl layout (slang goes
+# to shaders_glsl's sibling shaders_slang). The CRT overlay shipped by
+# retroconsole-config (crt.cfg, M11/#20) hard-references
+# /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp, so this path must
+# not change without updating that file in lockstep.
+#
+# To bump: pick a new upstream commit, set _commit + pkgver (the commit date),
+# update sha256sums to the new tarball's checksum (curl the archiveUrl | sha256sum;
+# the codeload tarball is byte-stable per commit but NOT across recompression, so
+# always re-pin), bump pkgrel back to 1, rebuild with FORCE_AUR=1, publish-repo.sh.
+pkgname=libretro-shaders-glsl
+# Date of the pinned upstream commit (libretro/glsl-shaders master @ _commit).
+pkgver=2026.06.03
+pkgrel=1
+_commit=2b2c5ee3fd8e1a3884e20ed424fd9bfbc51cbb3d
+pkgdesc="libretro GLSL shader presets (pinned snapshot) for the RetroArch gl driver"
+arch=('any')
+url="https://github.com/libretro/glsl-shaders"
+# Mixed/per-shader licensing (no repo-level LICENSE file; each shader header
+# carries its own terms — GPL, public domain, etc.). 'custom' is the honest
+# marker; makepkg only warns, it does not fail.
+license=('custom')
+# Pinned source tarball + real sha256 (not SKIP) — this is shipped data, so it
+# must be reproducible and integrity-checked at build time.
+source=("${pkgname}-${_commit}.tar.gz::https://github.com/libretro/glsl-shaders/archive/${_commit}.tar.gz")
+sha256sums=('018c56817f5f2828821489871063609a097557948b295a3ca8c86cf9ac4379b7')
+
+package() {
+    local dest="${pkgdir}/usr/share/libretro/shaders/shaders_glsl"
+    install -d "${dest}"
+    # Copy the whole tree verbatim: the .glslp presets reference their .glsl
+    # stages by RELATIVE path (e.g. crt/zfast-crt.glslp -> shaders/zfast_crt.glsl),
+    # so the directory structure must be preserved intact — do NOT flatten.
+    cp -a "${srcdir}/glsl-shaders-${_commit}/." "${dest}/"
+    # Drop upstream build scaffolding that has no runtime purpose in a shader dir.
+    rm -f "${dest}/Makefile" "${dest}/configure" "${dest}/.gitlab-ci.yml"
+    rm -rf "${dest}/.git"
+}

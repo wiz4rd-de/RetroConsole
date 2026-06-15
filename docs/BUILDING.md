@@ -174,6 +174,48 @@ so fixes to these never reach machines already in the field — keep product
 logic out of them (the ROMs tools scripts are one-line wrappers for that
 reason; ship behavioural fixes through the package above).
 
+## Adding a curated system
+
+ES-DE only knows the systems defined in
+`profile/airootfs/home/retro/ES-DE/custom_systems/es_systems.xml` — its bundled
+~190-system list is force-emptied at runtime (see the design note below). So
+adding a console is additive and self-contained:
+
+1. **Copy the canonical entry from ES-DE.** From ES-DE's bundled
+   `resources/systems/linux/es_systems.xml` (pin the version you build against —
+   currently **3.4.1**), copy the system's `<name>` **verbatim** (the canonical
+   name is what makes the theme supply artwork), plus its `<fullname>`, `<path>`,
+   `<extension>`, `<platform>`, `<theme>`, and the **bundled DEFAULT** `<command>`
+   (the first one — ES-DE's pick for that system).
+2. **Add a `<system>` block** to `custom_systems/es_systems.xml` with two
+   commands: the bundled default first (so a normal launch is byte-for-byte
+   ES-DE's behavior), then the `RetroArch — CRT` variant — the **same core** with
+   `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg` appended. Drop the
+   other bundled alt-emulators (M11 locked decision #3). Mirror an existing
+   console's block.
+3. **Ship the default core.** Add its libretro package to
+   `profile/packages.x86_64`. It **must** be ES-DE's default core file for that
+   system — if that `.so` is missing the launch fails with "core file not found"
+   even when another core is installed (see the design note on per-system
+   defaults). If the default core already ships for another system (e.g. Genesis
+   Plus GX also drives Master System), no change is needed here.
+4. **Create the ROM dir.** Add `["/home/retro/ROMs/<dir>"]="1000:1000:0777"` to
+   `profile/profiledef.sh` (0777 so Samba guests can drop ROMs — see the Samba
+   note below) and create `profile/airootfs/home/retro/ROMs/<dir>/.gitkeep` so
+   the empty dir is tracked and ships in the image.
+5. **Rebuild** (`make iso`). Fresh installs get the system and dir directly;
+   existing boxes get both via `retroconsole-seed` on the next *Tools → Update
+   System* (the seed materializes the curated dir at 0777 and the new
+   `es_systems.xml` reaches the box over OTA).
+6. **BIOS-dependent systems** (e.g. PlayStation-class, some Sega CD): we can't
+   redistribute BIOS files, so the system will list but games won't launch until
+   the user supplies the BIOS. Call this out in `docs/HARDWARE.md` and the
+   share's RetroArch `system/README.txt` rather than shipping anything.
+
+Master System (Genesis Plus GX, no extra core, no BIOS) is the worked example —
+see its block in `es_systems.xml` and its `mastersystem` entries in
+`profiledef.sh` and `ROMs/`.
+
 ## Build log warnings that are safe to ignore
 
 `mkinitcpio` prints `WARNING: Possibly missing firmware for module: ...` for
@@ -216,6 +258,32 @@ warnings appear on any stock Arch install.
   from its bundled `es_systems.xml`; if that core file is missing the launch
   fails with "core file not found" even when an alternative core (e.g.
   Nestopia) is installed.
+- **`custom_systems` is the sole source of truth; the bundled list is emptied**
+  (#62/#63). ES-DE merges its ~190-system bundled
+  `/usr/share/es-de/resources/systems/linux/es_systems.xml` *under*
+  `custom_systems/es_systems.xml`, which only **overrides by `<name>`** — so even
+  with a curated `custom_systems`, ES-DE still *knows* ~190 systems.
+  *Utilities → Create/update system directories* then creates a folder for every
+  one of them in `/home/retro/ROMs` (the Samba share), most at 0755 — not
+  guest-writable, so the share floods with unusable dirs; the same gap bites a
+  curated dir a user deletes and recreates from the menu. The fix: ship an empty
+  `<systemList/>` stub at the neutral path
+  `/usr/share/retroconsole/es-de/es_systems-empty.xml` (a real
+  `/usr/share/es-de/...` path would collide with `emulationstation-de` and abort
+  pacstrap) and have `retroconsole-seed` force-overwrite the bundled file with it
+  on every boot and after every *Update System* (a `pacman -Syu` reverts it to
+  stock). ES-DE then knows **only** the curated set, so that menu can only ever
+  (re)create curated dirs — and the menu stays fully visible (no Kiosk mode). The
+  seed also reconciles each curated ROM dir to 0777 (directory only, never
+  recursing into ROMs) and sweeps empty non-curated leftovers — a dir holding
+  nothing but ES-DE's generated `systeminfo.txt` — to tidy already-flooded boxes,
+  while preserving any dir that holds a real ROM. This is a deliberate, narrow
+  exception to "seed never touches ROMs": top-level dir modes/existence only,
+  and it skips any symlinked ROM dir so it can never chmod or delete through a
+  link to a target outside the curated tree. One accepted side effect: because
+  the seed force-replaces a package-owned file, `pacman -Qkk emulationstation-de`
+  will report the bundled `es_systems.xml` as modified — that is the seed owning
+  its runtime state by design, not corruption.
 - **Test game**: `ROMs/nes/` ships "Alter Ego" (Shiru & Denis Grachev, 2011,
   free/open-source homebrew) so the gamelist is never empty and game launch
   can be verified without copying ROMs in.
