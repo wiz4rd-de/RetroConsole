@@ -11,10 +11,11 @@
 #
 # Install path is /usr/share/libretro/shaders/shaders_glsl/ — RetroArch's default
 # glsl shader location and the historical libretro-shaders-glsl layout (slang goes
-# to shaders_glsl's sibling shaders_slang). The CRT overlay shipped by
-# retroconsole-config (crt.cfg, M11/#20) hard-references
-# /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp, so this path must
-# not change without updating that file in lockstep.
+# to shaders_glsl's sibling shaders_slang). The ES-DE shader-tier alt-emulators
+# shipped by retroconsole-config (es_systems.xml, #79) hard-reference presets under
+# /usr/share/libretro/shaders/shaders_glsl/ (bilinear.glslp and crt/zfast-crt,
+# crt-easymode, crt-easymode-halation), so this path must not change without
+# updating those commands in lockstep.
 #
 # To bump: pick a new upstream commit, set _commit + pkgver (the commit date),
 # update sha256sums to the new tarball's checksum (curl the archiveUrl | sha256sum;
