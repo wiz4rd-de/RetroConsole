@@ -10,6 +10,8 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-16
+
 ### Fixed
 - **RetroArch — CRT** now actually applies its shader. The alternative emulator
   set the preset by appending a `video_shader = …` line to RetroArch's config, but
@@ -152,7 +154,8 @@ First release — a self-installing, controller-first retro console (M0–M8).
 - Appliance configuration packaged so later fixes ship over OTA, and a tag-driven
   release pipeline that builds the ISO and publishes the OTA channel.
 
-[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.1...develop
+[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.2...develop
+[0.3.2]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.1...v0.2.2
