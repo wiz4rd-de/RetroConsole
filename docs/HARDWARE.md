@@ -41,15 +41,38 @@
   still quits back to ES-DE. A keyboard `F1` also opens the menu if one is
   attached. Use the menu for save states, fast-forward, controls, and shaders.
 - **Shaders (CRT look)**: in ES-DE, highlight a game and open its *Options →
-  Alternative emulators*, then pick **RetroArch — CRT** to launch with a CRT
-  scanline shader applied. The **RetroArch — CRT** entry always applies the
-  `zfast-crt` preset. To try a different shader or turn it off, open the RetroArch
-  menu (Down + Select) and go to *Quick Menu → Shaders* — a shader chosen there
-  applies for the current session.
-  The default graphics driver is `gl`, which uses the **glsl** shaders (the CRT
-  variant ships the lightweight `zfast-crt` preset so it stays smooth on weaker
-  GPUs); a **slang** shader pack is also installed for anyone who switches the
-  driver to `glcore` from the menu.
+  Alternative emulators* (or set one for every game via *Other Settings →
+  Alternative emulators*). Alongside the bundled default (no shader) there are
+  four looks, lightest to heaviest:
+
+  | Alternative emulator | Look | Cost |
+  |---|---|---|
+  | *(default, e.g. Mesen)* | crisp, no filter | none |
+  | **RetroArch — Smooth** | soft bilinear scaling, no scanlines | lightest |
+  | **RetroArch — CRT** | CRT scanlines (`zfast-crt`) — **recommended** | light |
+  | **RetroArch — CRT Sharp** | sharper CRT mask (`crt-easymode`) | ~8× CRT |
+  | **RetroArch — CRT Sharp+Glow** | CRT mask + halation glow | heaviest |
+
+  Pick lighter looks on a weaker box: **CRT** is tuned to hold 60 fps on the
+  low-end hardware; the two *Sharp* looks are nicer but heavier and may drop
+  frames there. The heavy looks are opt-in, so the plain default and **CRT**
+  never regress.
+
+  **Saving your own look wins.** Open the RetroArch menu (Down + Select) →
+  *Quick Menu → Shaders*, tune a shader, then **Save Game Preset**. After that,
+  launching that game through **any** tier (including **Smooth**/**CRT**) uses
+  *your* saved preset instead of the tier's — your choice always wins (precedence:
+  per-game saved preset → chosen tier → per-core → global). Delete the saved
+  preset to get the tier's look back. A shader chosen live but *not* saved applies
+  only for that session.
+
+  The default graphics driver is `gl`, which uses the **glsl** shaders; a
+  **slang** shader pack is also installed for anyone who switches the driver to
+  `glcore` from the menu.
+
+  <!-- TODO(#79): add side-by-side comparison screenshots of the four tiers,
+       captured from the verification image (QEMU), per the issue's "preview". -->
+
 
 ## BIOS files
 

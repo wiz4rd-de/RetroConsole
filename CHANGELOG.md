@@ -10,6 +10,33 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+### Added
+- **Four selectable shader looks per system.** Each console's *Alternative
+  emulators* list now offers, beside the bundled default (no shader), four
+  intensity-ordered tiers — **RetroArch — Smooth** (bilinear, smooth scaling),
+  **RetroArch — CRT** (`zfast-crt`, the recommended CRT), **RetroArch — CRT Sharp**
+  (`crt-easymode`) and **RetroArch — CRT Sharp+Glow** (`crt-easymode-halation`) —
+  so players pick a look from smooth scaling up to a glowing CRT. The two heavier
+  *Sharp* looks are opt-in, so the low-end box and the recommended CRT never
+  regress. Set per game (*Options → Alternative emulators*) or for everything
+  (*Other Settings → Alternative emulators*). (#79)
+- **Saved per-game shader presets now win over the chosen look.** A preset saved
+  from *Quick Menu → Shaders → Save Game Preset* applies on every launch of that
+  game through any tier, overriding the tier's preset (precedence: per-game saved
+  preset → chosen tier → per-core → global). A new `retroconsole-crt-launch`
+  wrapper implements this; deleting the saved preset restores the tier's look.
+  (#79)
+
+### Changed
+- **RetroArch — CRT** is now one of four shader tiers and launches through
+  `retroconsole-crt-launch` — its label is unchanged, so existing per-game CRT
+  selections keep working. The shader subsystem is now enabled globally
+  (`video_shader_enable` / `auto_shaders_enable` / `rgui_config_directory` ship in
+  `retroarch.cfg` and are forced over OTA by `retroconsole-seed`), and the
+  per-launch `crt.cfg` overlay is retired (`--appendconfig` is gone; pacman removes
+  the orphaned file on upgrade). The default (no-shader) launch is unchanged.
+  Supersedes #76. (#79)
+
 ## [0.3.2] - 2026-06-16
 
 ### Fixed
