@@ -10,7 +10,7 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=8
+pkgrel=9
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
@@ -66,10 +66,14 @@ package() {
     install -Dm644 retrobit-genesis-saturn-8button.cfg \
         "${pkgdir}/usr/share/libretro/autoconfig/udev/retrobit-genesis-saturn-8button.cfg"
 
-    # CRT shader overlay (M11/#20), read-only so RetroArch never rewrites it. The
-    # ES-DE "RetroArch — CRT" alternative emulator launches with
-    # `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg`. System path (not
-    # /home) so it is OTA-replaceable and never reconciled into the user's cfg.
+    # CRT shader ENABLE overlay (M11/#20), read-only so RetroArch never rewrites it.
+    # The ES-DE "RetroArch — CRT" alternative emulator launches with
+    # `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader <preset>`:
+    # --set-shader selects the preset (the only launch-time shader mechanism RetroArch
+    # honors), while this overlay carries only `video_shader_enable = "true"` (required,
+    # since the selector returns early when shaders are disabled, the Linux default).
+    # System path (not /home) so it is OTA-replaceable and never reconciled into the
+    # user's cfg.
     install -Dm644 crt.cfg "${pkgdir}/usr/share/retroconsole/retroarch/crt.cfg"
 
     # Empty bundled-systems stub (#62/#63). retroconsole-seed force-overwrites

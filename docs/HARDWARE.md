@@ -42,9 +42,10 @@
   attached. Use the menu for save states, fast-forward, controls, and shaders.
 - **Shaders (CRT look)**: in ES-DE, highlight a game and open its *Options →
   Alternative emulators*, then pick **RetroArch — CRT** to launch with a CRT
-  scanline shader applied. To tweak or turn it off live, open the RetroArch menu
-  (Down + Select) and go to *Quick Menu → Shaders*. A preset you save there is
-  remembered **per game**, overrides the ES-DE CRT default, and survives updates.
+  scanline shader applied. The **RetroArch — CRT** entry always applies the
+  `zfast-crt` preset. To try a different shader or turn it off, open the RetroArch
+  menu (Down + Select) and go to *Quick Menu → Shaders* — a shader chosen there
+  applies for the current session.
   The default graphics driver is `gl`, which uses the **glsl** shaders (the CRT
   variant ships the lightweight `zfast-crt` preset so it stays smooth on weaker
   GPUs); a **slang** shader pack is also installed for anyone who switches the
