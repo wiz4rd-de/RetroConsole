@@ -10,6 +10,19 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+### Fixed
+- **RetroArch — CRT** now actually applies its shader. The alternative emulator
+  set the preset by appending a `video_shader = …` line to RetroArch's config, but
+  RetroArch removed that config key in 1.7.8 and silently ignores it — so the CRT
+  variant enabled the shader subsystem yet selected nothing, launching with no
+  visible effect even though the glsl pack and `zfast-crt` preset were on disk.
+  (The 0.3.1 fix made the shader *files* reach OTA boxes but did not address this:
+  the file was present and still nothing loaded.) The CRT command now selects the
+  preset on the RetroArch command line with `--set-shader …/crt/zfast-crt.glslp`,
+  the launch-time mechanism RetroArch honors, and `crt.cfg` is trimmed to the one
+  key it still needs (`video_shader_enable`). The default (non-CRT) launch is
+  unchanged. Reaches existing boxes over OTA. (#20)
+
 ## [0.3.1] - 2026-06-15
 
 Shader delivery fix (M11 follow-up): the glsl/slang packs now reach existing
