@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# retroconsole-crt-launch — invoked by the ES-DE "RetroArch — <tier>" alternative
+# emulators (Smooth / CRT / CRT Sharp / CRT Sharp+Glow; see es_systems.xml). It
+# applies the chosen GLSL preset ($1) UNLESS the player has saved a per-game
+# shader preset, which then wins.
+#
+# Precedence (highest first): per-game saved preset > chosen tier preset >
+# per-core preset > global. A plain `--set-shader <preset>` can't express this:
+# RetroArch v1.22.2 lets --set-shader override ALL automatic presets, INCLUDING a
+# per-game one — so forcing the tier unconditionally would silently discard a
+# preset the player saved from Quick Menu -> Shaders -> Save Game Preset. This
+# wrapper restores that override only when no per-game preset exists, so a saved
+# look always wins and the tier is the fallback default.
+#
+# Generalizes the (closed) #76 wrapper: the preset is a positional arg, not a
+# flag, so it can't clash with RetroArch's own options and needs no getopts. The
+# rest of the argv is the resolved RetroArch binary + its launch args verbatim.
+# Same conventions as retroconsole-launch: `set -uo pipefail`, a non-fatal
+# `logger -t` breadcrumb, and `exec` so RetroArch replaces this shell.
+set -uo pipefail
+
+# Field-debug breadcrumb to the journal (`journalctl -t retroconsole-crt-launch`).
+# Non-fatal, never blocks the launch.
+log() { command -v logger >/dev/null 2>&1 && logger -t retroconsole-crt-launch "$*" || true; }
+
+preset="$1"; shift                                   # absolute .glslp path from es_systems.xml
+ra="$1"; shift                                       # resolved %EMULATOR_RETROARCH% binary
+args=("$@")                                          # -L <core.so> … <rom>  (rom last)
+
+# Must equal the wrapper-visible rgui_config_directory pinned by retroconsole-seed
+# (Part A) — that is where RetroArch reads/writes auto presets, so the per-game
+# preset path below must point at the same tree.
+PRESET_BASE="${HOME}/.config/retroarch/config"
+INFO_DIR="/usr/share/libretro/info"
+
+# Resolve the libretro corename (the dir RetroArch saves a per-game preset under,
+# e.g. "Nintendo - SNES" for snes9x) from the core's shipped .info file. The
+# launch line passes the core as the value after -L.
+core=""; for ((i = 0; i < ${#args[@]}; i++)); do [[ ${args[i]} == "-L" ]] && core="${args[i + 1]:-}"; done
+rom="${args[${#args[@]} - 1]:-}"
+corename=""
+if [[ -n $core ]]; then
+    info="${INFO_DIR}/$(basename "$core" .so).info"  # e.g. snes9x_libretro.info
+    [[ -r $info ]] && corename=$(awk -F'"' '/^[[:space:]]*corename[[:space:]]*=/ {print $2; exit}' "$info")
+fi
+game=$(basename "$rom"); game="${game%.*}"
+
+if [[ -n $corename && -n $game && -f "${PRESET_BASE}/${corename}/${game}.glslp" ]]; then
+    log "per-game preset present for ${corename}/${game} — not forcing ${preset}"
+    exec "$ra" "$@"                                   # auto-preset loads the per-game preset
+fi
+log "no per-game preset — forcing ${preset}"
+exec "$ra" --set-shader "$preset" "$@"               # chosen preset overrides per-core/global
