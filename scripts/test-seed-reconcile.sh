@@ -103,6 +103,16 @@ grep -qx 'input_menu_toggle_gamepad_combo = "9"' "${HOME_DIR}/.config/retroarch/
 # populated on OTA boxes without an online-updater download.
 grep -qx 'video_shader_dir = "/usr/share/libretro/shaders/"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
     && ok "video_shader_dir key forced (bundled shader pack)" || bad "video_shader_dir not forced"
+# #79 Part A: the shader-tier picker needs the subsystem enabled (Linux default
+# false), auto presets on (so a saved per-game preset wins), and the preset dir
+# pinned (so the wrapper's per-game lookup path matches). The fabricated cfg lacks
+# all three, so this exercises ensure_kv_force's APPEND branch (the OTA path).
+grep -qx 'video_shader_enable = "true"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
+    && ok "video_shader_enable key forced (shader tiers)" || bad "video_shader_enable not forced"
+grep -qx 'auto_shaders_enable = "true"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
+    && ok "auto_shaders_enable key forced (per-game preset auto-load)" || bad "auto_shaders_enable not forced"
+grep -qx 'rgui_config_directory = "/home/retro/.config/retroarch/config"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
+    && ok "rgui_config_directory key forced (per-game preset dir)" || bad "rgui_config_directory not forced"
 grep -qx 'video_fullscreen = "true"' "${HOME_DIR}/.config/retroarch/retroarch.cfg" \
     && ok "unmanaged retroarch key preserved" || bad "unmanaged retroarch key lost"
 

@@ -212,14 +212,20 @@ adding a console is additive and self-contained:
    name is what makes the theme supply artwork), plus its `<fullname>`, `<path>`,
    `<extension>`, `<platform>`, `<theme>`, and the **bundled DEFAULT** `<command>`
    (the first one — ES-DE's pick for that system).
-2. **Add a `<system>` block** to `custom_systems/es_systems.xml` with two
+2. **Add a `<system>` block** to `custom_systems/es_systems.xml` with five
    commands: the bundled default first (so a normal launch is byte-for-byte
-   ES-DE's behavior), then the `RetroArch — CRT` variant — the **same core** with
-   `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp`
-   appended (`--set-shader` selects the preset — the only launch-time shader
-   mechanism RetroArch honors; the appendconfig only carries `video_shader_enable`).
-   Drop the other bundled alt-emulators (M11 locked decision #3). Mirror an existing
-   console's block.
+   ES-DE's behavior), then the **four shader tiers** — the **same core** launched
+   through the wrapper, lightest to heaviest:
+   `RetroArch — Smooth` (`bilinear.glslp`), `RetroArch — CRT` (`crt/zfast-crt.glslp`),
+   `RetroArch — CRT Sharp` (`crt/crt-easymode.glslp`),
+   `RetroArch — CRT Sharp+Glow` (`crt/crt-easymode-halation.glslp`). Each is
+   `/usr/local/bin/retroconsole-crt-launch <preset-under-shaders_glsl/> %EMULATOR_RETROARCH% -L <core> %ROM%`.
+   The wrapper forces the chosen preset via `--set-shader` unless the player saved
+   a per-game preset (which wins); the shader subsystem is enabled globally (Part A
+   in `retroconsole-seed` + `retroarch.cfg`), so no `--appendconfig` is needed.
+   Keep the **`RetroArch — CRT`** label verbatim (ES-DE stores the chosen
+   alt-emulator by label string). Drop the other bundled alt-emulators (M11 locked
+   decision #3, generalized by #79). Mirror an existing console's block.
 3. **Ship the default core.** Add its libretro package to
    `profile/packages.x86_64`. It **must** be ES-DE's default core file for that
    system — if that `.so` is missing the launch fails with "core file not found"

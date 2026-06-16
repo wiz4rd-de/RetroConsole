@@ -209,6 +209,18 @@ if [[ -f ${RA_CFG} ]]; then
     # online updater. /usr/share/libretro/shaders/ holds shaders_glsl/ (the active
     # set for our gl driver) and shaders_slang/ (for glcore enthusiasts).
     ensure_kv_force "${RA_CFG}" "video_shader_dir" "/usr/share/libretro/shaders/"
+    # Selectable shader tiers (#79, Part A). The ES-DE "RetroArch — <tier>" alt-
+    # emulators force a preset via retroconsole-crt-launch --set-shader, which is
+    # a no-op unless the shader subsystem is enabled (Linux default FALSE) — so
+    # force it on for OTA boxes too. auto_shaders_enable (default true) is pinned
+    # so a user toggle-off self-corrects: the wrapper defers to a saved per-game
+    # preset, which only auto-loads when this is on. rgui_config_directory is
+    # RetroArch's default, pinned so the wrapper's per-game lookup path equals
+    # where RetroArch saves a Game Preset. On the default emulator nothing forces
+    # a preset and no auto preset exists, so enabling these stays invisible.
+    ensure_kv_force "${RA_CFG}" "video_shader_enable" "true"
+    ensure_kv_force "${RA_CFG}" "auto_shaders_enable" "true"
+    ensure_kv_force "${RA_CFG}" "rgui_config_directory" "/home/retro/.config/retroarch/config"
     # video_refresh_rate is intentionally NOT managed here: it is display-
     # dependent, so the in-session launcher (retroconsole-launch) sets it per
     # boot from the refresh cage is actually driving, falling back to the

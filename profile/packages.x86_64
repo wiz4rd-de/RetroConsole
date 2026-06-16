@@ -72,7 +72,8 @@ libretro-shaders-slang
 emulationstation-de
 game-devices-udev
 # glsl shader presets (data-only, pinned commit) — installs the .glslp/.glsl tree
-# to /usr/share/libretro/shaders/shaders_glsl/ that crt.cfg's CRT preset lives in.
+# to /usr/share/libretro/shaders/shaders_glsl/ that the ES-DE shader-tier
+# alt-emulators (es_systems.xml, #79) point at.
 libretro-shaders-glsl
 retroarch-autoconfig-udev-git
 # Our own appliance config (packages/retroconsole-config) — system-level
