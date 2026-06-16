@@ -215,8 +215,10 @@ adding a console is additive and self-contained:
 2. **Add a `<system>` block** to `custom_systems/es_systems.xml` with two
    commands: the bundled default first (so a normal launch is byte-for-byte
    ES-DE's behavior), then the `RetroArch — CRT` variant — the **same core** with
-   `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg` appended. Drop the
-   other bundled alt-emulators (M11 locked decision #3). Mirror an existing
+   `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp`
+   appended (`--set-shader` selects the preset — the only launch-time shader
+   mechanism RetroArch honors; the appendconfig only carries `video_shader_enable`).
+   Drop the other bundled alt-emulators (M11 locked decision #3). Mirror an existing
    console's block.
 3. **Ship the default core.** Add its libretro package to
    `profile/packages.x86_64`. It **must** be ES-DE's default core file for that
