@@ -10,6 +10,8 @@ finalized into a version block when the release tag is cut.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-16
+
 ### Added
 - **Four selectable shader looks per system.** Each console's *Alternative
   emulators* list now offers, beside the bundled default (no shader), four
@@ -181,7 +183,8 @@ First release — a self-installing, controller-first retro console (M0–M8).
 - Appliance configuration packaged so later fixes ship over OTA, and a tag-driven
   release pipeline that builds the ISO and publishes the OTA channel.
 
-[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.2...develop
+[Unreleased]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.3...develop
+[0.3.3]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/wiz4rd-de/RetroConsole/compare/v0.2.2...v0.3.0
