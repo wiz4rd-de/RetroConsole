@@ -34,10 +34,13 @@ PRESET_BASE="${HOME}/.config/retroarch/config"
 INFO_DIR="/usr/share/libretro/info"
 
 # Resolve the libretro corename (the dir RetroArch saves a per-game preset under,
-# e.g. "Nintendo - SNES" for snes9x) from the core's shipped .info file. The
-# launch line passes the core as the value after -L.
+# e.g. "Snes9x" for snes9x) from the core's shipped .info file. The launch line
+# passes the core as the value after -L.
 core=""; for ((i = 0; i < ${#args[@]}; i++)); do [[ ${args[i]} == "-L" ]] && core="${args[i + 1]:-}"; done
-rom="${args[${#args[@]} - 1]:-}"
+# Guard the subscript on count: on an empty args[] a -1 index would emit a bash
+# "bad array subscript" diagnostic before the :- default applies (a real launch
+# always passes -L <core> <rom>, so this is purely defensive).
+rom=""; (( ${#args[@]} > 0 )) && rom="${args[${#args[@]} - 1]}"
 corename=""
 if [[ -n $core ]]; then
     info="${INFO_DIR}/$(basename "$core" .so).info"  # e.g. snes9x_libretro.info
