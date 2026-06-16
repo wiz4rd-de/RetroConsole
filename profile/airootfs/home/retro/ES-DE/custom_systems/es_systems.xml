@@ -4,14 +4,24 @@ RetroConsole custom systems (M11/#20).
 
 ES-DE has no native shader picker that drives RetroArch, so "shaders from ES-DE"
 is delivered as a per-system ALTERNATIVE EMULATOR: "RetroArch — CRT" launches the
-same core, adding RetroArch's appendconfig flag set to
-/usr/share/retroconsole/retroarch/crt.cfg, the
-read-only overlay that enables the glsl CRT preset (shipped by retroconsole-config
-+ libretro-shaders-glsl). The first <command> of each system is the DEFAULT, so a
-normal launch is byte-for-byte ES-DE's bundled behavior; picking "RetroArch — CRT"
-under a game's Options -> Alternative emulators applies the shader. A per-game
-preset saved from the in-game menu (Down+Select -> Quick Menu -> Shaders) auto-
-loads ahead of this overlay and persists on the rcuser partition.
+same core and adds two RetroArch flags (see each system's second command): a
+set-shader flag pointing at
+/usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp, and an appendconfig
+flag pointing at /usr/share/retroconsole/retroarch/crt.cfg.
+The set-shader flag is what actually applies the preset. RetroArch picks the shader
+to load at content start ONLY from the set-shader CLI value or an on-disk automatic
+preset; it does NOT read a `video_shader` config key (that key was removed in
+RetroArch 1.7.8 and is silently ignored). The earlier approach (appendconfig'ing a
+crt.cfg that set `video_shader`) therefore loaded nothing, the M11/#20 bug. crt.cfg
+is still appended, but now only to carry `video_shader_enable = "true"`: the shader
+selector returns early (no shader) when that is false, and it defaults to false on a
+Linux build, so the enable flag is required for the set-shader flag to take effect.
+The first <command> of each system is the DEFAULT, so a normal launch is byte-for-
+byte ES-DE's bundled behavior (neither flag present, so shaders stay off); picking
+"RetroArch — CRT" under a game's Options, Alternative emulators applies the CRT
+preset. Note the set-shader flag OVERRIDES automatic shader presets, so the CRT
+entry always shows zfast-crt; a shader chosen live from the in-game menu
+(Down+Select, Quick Menu, Shaders) applies for that session.
 
 IMPORTANT — this file is the SOLE source of truth for the systems ES-DE knows
 (#62/#63). retroconsole-seed force-overwrites ES-DE's ~190-system bundled
@@ -48,7 +58,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/nes</path>
         <extension>.3dsen .3DSEN .fds .FDS .nes .NES .unf .UNF .unif .UNIF .7z .7Z .zip .ZIP</extension>
         <command label="Mesen">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mesen_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mesen_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mesen_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>nes</platform>
         <theme>nes</theme>
     </system>
@@ -58,7 +68,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/snes</path>
         <extension>.bin .BIN .bml .BML .bs .BS .bsx .BSX .dx2 .DX2 .fig .FIG .gd3 .GD3 .gd7 .GD7 .mgd .MGD .sfc .SFC .smc .SMC .st .ST .swc .SWC .7z .7Z .zip .ZIP</extension>
         <command label="Snes9x - Current">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/snes9x_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/snes9x_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/snes9x_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>snes</platform>
         <theme>snes</theme>
     </system>
@@ -68,7 +78,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/genesis</path>
         <extension>.32x .32X .68k .68K .bin .BIN .bms .BMS .chd .CHD .cue .CUE .gen .GEN .gg .GG .iso .ISO .m3u .M3U .md .MD .mdx .MDX .sg .SG .sgd .SGD .smd .SMD .sms .SMS .7z .7Z .zip .ZIP</extension>
         <command label="Genesis Plus GX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>genesis</platform>
         <theme>genesis</theme>
     </system>
@@ -78,7 +88,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/megadrive</path>
         <extension>.32x .32X .68k .68K .bin .BIN .bms .BMS .chd .CHD .cue .CUE .gen .GEN .gg .GG .iso .ISO .m3u .M3U .md .MD .mdx .MDX .sg .SG .sgd .SGD .smd .SMD .sms .SMS .7z .7Z .zip .ZIP</extension>
         <command label="Genesis Plus GX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>megadrive</platform>
         <theme>megadrive</theme>
     </system>
@@ -88,7 +98,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/mastersystem</path>
         <extension>.68k .68K .bin .BIN .bms .BMS .chd .CHD .col .COL .cue .CUE .gen .GEN .gg .GG .iso .ISO .m3u .M3U .md .MD .mdx .MDX .rom .ROM .sg .SG .sgd .SGD .smd .SMD .sms .SMS .7z .7Z .zip .ZIP</extension>
         <command label="Genesis Plus GX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/genesis_plus_gx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>mastersystem</platform>
         <theme>mastersystem</theme>
     </system>
@@ -98,7 +108,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/gb</path>
         <extension>.bs .BS .cgb .CGB .dmg .DMG .gb .GB .gbc .GBC .gbx .GBX .sgb .SGB .sfc .SFC .smc .SMC .7z .7Z .zip .ZIP</extension>
         <command label="Gambatte">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>gb</platform>
         <theme>gb</theme>
     </system>
@@ -108,7 +118,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/gbc</path>
         <extension>.bs .BS .cgb .CGB .dmg .DMG .gb .GB .gbc .GBC .gbx .GBX .sgb .SGB .sfc .SFC .smc .SMC .7z .7Z .zip .ZIP</extension>
         <command label="Gambatte">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/gambatte_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>gbc</platform>
         <theme>gbc</theme>
     </system>
@@ -118,7 +128,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/gba</path>
         <extension>.agb .AGB .bin .BIN .cgb .CGB .dmg .DMG .gb .GB .gba .GBA .gbc .GBC .gbx .GBX .sgb .SGB .7z .7Z .zip .ZIP</extension>
         <command label="mGBA">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mgba_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mgba_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mgba_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>gba</platform>
         <theme>gba</theme>
     </system>
@@ -128,7 +138,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/n64</path>
         <extension>.AppImage .bin .BIN .d64 .D64 .desktop .n64 .N64 .ndd .NDD .sh .u1 .U1 .v64 .V64 .z64 .Z64 .7z .7Z .zip .ZIP</extension>
         <command label="Mupen64Plus-Next">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mupen64plus_next_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mupen64plus_next_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mupen64plus_next_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>n64</platform>
         <theme>n64</theme>
     </system>
@@ -138,7 +148,7 @@ counterpart) and must be preserved.
         <path>%ROMPATH%/psx</path>
         <extension>.bin .BIN .cbn .CBN .ccd .CCD .chd .CHD .cue .CUE .ecm .ECM .exe .EXE .img .IMG .iso .ISO .m3u .M3U .mdf .MDF .mds .MDS .minipsf .MINIPSF .pbp .PBP .psexe .PSEXE .psf .PSF .toc .TOC .z .Z .znx .ZNX .7z .7Z .zip .ZIP</extension>
         <command label="Beetle PSX">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mednafen_psx_libretro.so %ROM%</command>
-        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mednafen_psx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg %ROM%</command>
+        <command label="RetroArch — CRT">%EMULATOR_RETROARCH% -L %CORE_RETROARCH%/mednafen_psx_libretro.so --appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader /usr/share/libretro/shaders/shaders_glsl/crt/zfast-crt.glslp %ROM%</command>
         <platform>psx</platform>
         <theme>psx</theme>
     </system>
