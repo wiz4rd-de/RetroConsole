@@ -65,6 +65,7 @@ check() {  # check <path> <expected-symbolic-mode>
 # Static package() targets — paths + modes from the PKGBUILD.
 check usr/local/bin/retroconsole-session -rwxr-xr-x
 check usr/local/bin/retroconsole-launch  -rwxr-xr-x
+check usr/local/bin/retroconsole-crt-launch -rwxr-xr-x
 check usr/local/bin/retroconsole-update  -rwxr-xr-x
 check usr/local/bin/retroconsole-seed    -rwxr-xr-x
 check etc/systemd/system/retroconsole-seed.service                       -rw-r--r--
@@ -73,7 +74,6 @@ check etc/polkit-1/rules.d/50-retroconsole-network.rules                 -rw-r--
 check etc/wireplumber/wireplumber.conf.d/50-retroconsole-prefer-hdmi.conf -rw-r--r--
 check etc/vconsole.conf                                                   -rw-r--r--
 check usr/share/libretro/autoconfig/udev/retrobit-genesis-saturn-8button.cfg -rw-r--r--
-check usr/share/retroconsole/retroarch/crt.cfg                                -rw-r--r--
 check usr/share/retroconsole/es-de/es_systems-empty.xml                       -rw-r--r--
 
 # Named skel members (the non-launcher managed files), all 0644.

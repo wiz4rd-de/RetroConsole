@@ -10,7 +10,7 @@
 # scripts/publish-repo.sh to ship an update.
 pkgname=retroconsole-config
 pkgver=1.0.0
-pkgrel=9
+pkgrel=10
 pkgdesc="RetroConsole appliance configuration and session scripts"
 arch=('any')
 url="https://github.com/wiz4rd-de/RetroConsole"
@@ -25,17 +25,18 @@ license=('MIT')
 # listed ONLY in packages.x86_64, which seeds the ISO build (pacstrap) and nothing
 # more. A `pacman -Syu` OTA upgrades installed packages and pulls new DEPENDENCIES,
 # but never installs a brand-new package nothing depends on — so OTA-updated boxes
-# got the "RetroArch — CRT" alt-emulator and crt.cfg WITHOUT the shader files it
-# points at: the CRT variant silently loaded no shader and Quick Menu -> Shaders
+# got the shader alt-emulators (and the in-game shader browser) WITHOUT the shader
+# files they point at: the tiers silently loaded no shader and Quick Menu -> Shaders
 # was empty until the user ran the online updater. Depending on them here forces
 # OTA to install the packs, matching a fresh flash. glsl is the active set the gl
-# driver + crt.cfg consume; slang ships for enthusiasts who switch to glcore.
+# driver consumes; slang ships for enthusiasts who switch to glcore.
 depends=('openssh' 'wlr-randr' 'wireplumber'
          'libretro-shaders-glsl' 'libretro-shaders-slang')
 # Scriptlet enables retroconsole-seed.service on install/upgrade (A4/#11).
 install=retroconsole-config.install
 source=('retroconsole-session'
         'retroconsole-launch'
+        'retroconsole-crt-launch'
         'retroconsole-update'
         'retroconsole-seed'
         'retroconsole-seed.service'
@@ -44,13 +45,16 @@ source=('retroconsole-session'
         '50-retroconsole-prefer-hdmi.conf'
         'vconsole.conf'
         'retrobit-genesis-saturn-8button.cfg'
-        'crt.cfg'
         'es_systems-empty.xml')
 sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
     install -Dm755 retroconsole-session "${pkgdir}/usr/local/bin/retroconsole-session"
     install -Dm755 retroconsole-launch "${pkgdir}/usr/local/bin/retroconsole-launch"
+    # Shader-tier wrapper (#79): the ES-DE "RetroArch — <tier>" alt-emulators
+    # invoke this with a preset path as $1; it forces that preset via --set-shader
+    # unless the player saved a per-game preset (which wins). Replaces crt.cfg.
+    install -Dm755 retroconsole-crt-launch "${pkgdir}/usr/local/bin/retroconsole-crt-launch"
     install -Dm755 retroconsole-update "${pkgdir}/usr/local/bin/retroconsole-update"
     install -Dm755 retroconsole-seed "${pkgdir}/usr/local/bin/retroconsole-seed"
     install -Dm644 retroconsole-seed.service "${pkgdir}/etc/systemd/system/retroconsole-seed.service"
@@ -66,16 +70,6 @@ package() {
     install -Dm644 retrobit-genesis-saturn-8button.cfg \
         "${pkgdir}/usr/share/libretro/autoconfig/udev/retrobit-genesis-saturn-8button.cfg"
 
-    # CRT shader ENABLE overlay (M11/#20), read-only so RetroArch never rewrites it.
-    # The ES-DE "RetroArch — CRT" alternative emulator launches with
-    # `--appendconfig /usr/share/retroconsole/retroarch/crt.cfg --set-shader <preset>`:
-    # --set-shader selects the preset (the only launch-time shader mechanism RetroArch
-    # honors), while this overlay carries only `video_shader_enable = "true"` (required,
-    # since the selector returns early when shaders are disabled, the Linux default).
-    # System path (not /home) so it is OTA-replaceable and never reconciled into the
-    # user's cfg.
-    install -Dm644 crt.cfg "${pkgdir}/usr/share/retroconsole/retroarch/crt.cfg"
-
     # Empty bundled-systems stub (#62/#63). retroconsole-seed force-overwrites
     # ES-DE's ~190-system bundled es_systems.xml with this empty <systemList/>,
     # making custom_systems/es_systems.xml the SOLE source of truth — the root-
@@ -83,7 +77,7 @@ package() {
     # a NEUTRAL path (NOT the emulationstation-de-owned bundled file) so pacstrap
     # never hits a file conflict; the seed copies it onto the real file at runtime
     # and re-applies it after every "Update System" reverts the bundled file to
-    # stock. Same reasoning as the autoconfig profile and crt.cfg above.
+    # stock. Same reasoning as the autoconfig profile above.
     install -Dm644 es_systems-empty.xml "${pkgdir}/usr/share/retroconsole/es-de/es_systems-empty.xml"
 
     # Managed-home seed payload, packaged to a NEUTRAL path (never /home — that
